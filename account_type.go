@@ -1,6 +1,6 @@
 package saldo
 
-// AccountType classifies an account by its role in the account equation.
+// AccountType classifies an account by its role in the Accounting Equation.
 type AccountType string
 
 // The five account types.
