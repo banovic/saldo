@@ -89,38 +89,6 @@ func (a Money) IsValid() bool {
 	return a.Currency.IsValid()
 }
 
-func (a Money) Add(b Money) (Money, error) {
-	if !a.IsValid() || !b.IsValid() {
-		return Money{}, fmt.Errorf("%w: %v and %v", ErrInvalidMoney, a, b)
-	}
-	if a.Currency != b.Currency {
-		return Money{}, fmt.Errorf("%w: %q and %q", ErrCurrencyMismatch, a.Currency, b.Currency)
-	}
-	if a.MinorUnits > 0 && b.MinorUnits > math.MaxInt64-a.MinorUnits {
-		return Money{}, fmt.Errorf("%w: %v and %v", ErrOverflow, a, b)
-	}
-	if a.MinorUnits < 0 && b.MinorUnits < math.MinInt64-a.MinorUnits {
-		return Money{}, fmt.Errorf("%w: %v and %v", ErrOverflow, a, b)
-	}
-	return Money{MinorUnits: a.MinorUnits + b.MinorUnits, Currency: a.Currency}, nil
-}
-
-func (a Money) Sub(b Money) (Money, error) {
-	if !a.IsValid() || !b.IsValid() {
-		return Money{}, fmt.Errorf("%w: %v and %v", ErrInvalidMoney, a, b)
-	}
-	if a.Currency != b.Currency {
-		return Money{}, fmt.Errorf("%w: %q and %q", ErrCurrencyMismatch, a.Currency, b.Currency)
-	}
-	if b.MinorUnits < 0 && a.MinorUnits > math.MaxInt64+b.MinorUnits {
-		return Money{}, fmt.Errorf("%w: %v and %v", ErrOverflow, a, b)
-	}
-	if b.MinorUnits > 0 && a.MinorUnits < math.MinInt64+b.MinorUnits {
-		return Money{}, fmt.Errorf("%w: %v and %v", ErrOverflow, a, b)
-	}
-	return Money{MinorUnits: a.MinorUnits - b.MinorUnits, Currency: a.Currency}, nil
-}
-
 func (a Money) Mul(k int64) (Money, error) {
 	if !a.IsValid() {
 		return Money{}, fmt.Errorf("%w: %v", ErrInvalidMoney, a)
