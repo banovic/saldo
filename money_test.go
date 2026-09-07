@@ -224,7 +224,7 @@ func TestSum(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := Sum(tc.currency, tc.ms)
+			got, err := SumMoney(tc.currency, tc.ms)
 			if !errors.Is(err, tc.wantErr) {
 				t.Errorf("Sum(%q, %v) error = %v, want %v", tc.currency, tc.ms, err, tc.wantErr)
 			}
@@ -238,12 +238,36 @@ func TestSum(t *testing.T) {
 func TestSumDoesNotModifyInput(t *testing.T) {
 	ms := []Money{{500, USD}, {-200, USD}}
 	want := []Money{{500, USD}, {-200, USD}}
-	if _, err := Sum(USD, ms); err != nil {
+	if _, err := SumMoney(USD, ms); err != nil {
 		t.Fatalf("Sum(%q, %v) error = %v, want nil", USD, ms, err)
 	}
 	for i := range ms {
 		if ms[i] != want[i] {
 			t.Errorf("Sum modified ms[%d] = %v, want %v", i, ms[i], want[i])
 		}
+	}
+}
+
+func TestMoneyIsZeroAmount(t *testing.T) {
+	testCases := []struct {
+		name string
+		a    Money
+		want bool
+	}{
+		{"zero value money", Money{}, true},
+		{"zero amount", Money{0, USD}, true},
+		{"currency is ignored", Money{0, "XXX"}, true},
+		{"zero in a currency without minor units", Money{0, JPY}, true},
+		{"positive", Money{1, USD}, false},
+		{"negative", Money{-1, USD}, false},
+		{"MaxInt64", Money{math.MaxInt64, USD}, false},
+		{"MinInt64", Money{math.MinInt64, USD}, false},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.a.IsZeroAmount(); got != tc.want {
+				t.Errorf("%v.IsZeroAmount() = %t, want %t", tc.a, got, tc.want)
+			}
+		})
 	}
 }

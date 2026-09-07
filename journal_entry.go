@@ -1,6 +1,15 @@
 package saldo
 
-import "time"
+import (
+	"errors"
+	"fmt"
+	"time"
+)
+
+var (
+	ErrNotEnoughPostings  = errors.New("not enough postings")
+	ErrPostingsSumNotZero = errors.New("postings sum is not zero")
+)
 
 // JournalEntryID is ID of single Journal Entry, can be empty ("" is valid).
 type JournalEntryID string
@@ -41,4 +50,26 @@ type JournalEntry struct {
 
 	// At least 2 Postings which must sum to 0.
 	Postings []Posting
+}
+
+// Validates JournaleEntry against Ledger's functional currency (fc).
+// JournalEntry is valid:
+// - at least 2 Postings
+// - Postings sum to zero in their FunctionalAmount
+func (je JournalEntry) Validate(fc Currency) error {
+	if len(je.Postings) < 2 {
+		return fmt.Errorf("%w: %d posting(s)", ErrNotEnoughPostings, len(je.Postings))
+	}
+	var ms []Money
+	for _, p := range je.Postings {
+		ms = append(ms, p.FunctionalAmount)
+	}
+	sum, err := SumMoney(fc, ms)
+	if err != nil {
+		return err
+	}
+	if !sum.IsZeroAmount() {
+		return fmt.Errorf("%w: %v", ErrPostingsSumNotZero, sum)
+	}
+	return nil
 }

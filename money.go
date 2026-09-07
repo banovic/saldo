@@ -90,6 +90,10 @@ func (a Money) IsValid() bool {
 	return a.Currency.IsValid()
 }
 
+func (a Money) IsZeroAmount() bool {
+	return a.MinorUnits == 0
+}
+
 func (a Money) Mul(k int64) (Money, error) {
 	if !a.IsValid() {
 		return Money{}, fmt.Errorf("%w: %v", ErrInvalidMoney, a)
@@ -131,7 +135,7 @@ func (a Money) String() string {
 // Sums all the monies in ms.
 // All monies must be in the same currency c.
 // If ms is empty, a valid zero money in currncy c is returned.
-func Sum(c Currency, ms []Money) (Money, error) {
+func SumMoney(c Currency, ms []Money) (Money, error) {
 	if !c.IsValid() {
 		return Money{}, fmt.Errorf("%w: %v", ErrInvalidCurrency, c)
 	}
