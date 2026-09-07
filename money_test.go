@@ -175,3 +175,75 @@ func TestMoneyString(t *testing.T) {
 		})
 	}
 }
+
+func TestSum(t *testing.T) {
+	testCases := []struct {
+		name     string
+		currency Currency
+		ms       []Money
+		want     Money
+		wantErr  error
+	}{
+		{"empty currency", "", nil, Money{}, ErrInvalidCurrency},
+		{"unknown currency", "XXX", nil, Money{}, ErrInvalidCurrency},
+		{"unknown currency is checked before the monies", "XXX", []Money{{1, USD}}, Money{}, ErrInvalidCurrency},
+
+		{"nil slice is zero", USD, nil, Money{0, USD}, nil},
+		{"empty slice is zero", USD, []Money{}, Money{0, USD}, nil},
+
+		{"single money", USD, []Money{{500, USD}}, Money{500, USD}, nil},
+		{"two monies", USD, []Money{{500, USD}, {250, USD}}, Money{750, USD}, nil},
+		{"negatives", USD, []Money{{-500, USD}, {-250, USD}}, Money{-750, USD}, nil},
+		{"mixed signs", USD, []Money{{500, USD}, {-250, USD}}, Money{250, USD}, nil},
+		{"balanced entry sums to zero", USD, []Money{{500, USD}, {-200, USD}, {-300, USD}}, Money{0, USD}, nil},
+		{"zero exponent currency", JPY, []Money{{5, JPY}, {7, JPY}}, Money{12, JPY}, nil},
+
+		{"mismatched currency", USD, []Money{{500, USD}, {250, EUR}}, Money{}, ErrCurrencyMismatch},
+		{"mismatch on first money", USD, []Money{{250, EUR}, {500, USD}}, Money{}, ErrCurrencyMismatch},
+		{"invalid currency in a money is a mismatch", USD, []Money{{500, USD}, {250, "XXX"}}, Money{}, ErrCurrencyMismatch},
+		{"empty currency in a money is a mismatch", USD, []Money{{500, USD}, {250, ""}}, Money{}, ErrCurrencyMismatch},
+
+		{"sum exactly MaxInt64", USD, []Money{{math.MaxInt64 - 1, USD}, {1, USD}}, Money{math.MaxInt64, USD}, nil},
+		{"sum exactly MinInt64", USD, []Money{{math.MinInt64 + 1, USD}, {-1, USD}}, Money{math.MinInt64, USD}, nil},
+		{"one past MaxInt64 overflows", USD, []Money{{math.MaxInt64, USD}, {1, USD}}, Money{}, ErrOverflow},
+		{"one past MinInt64 overflows", USD, []Money{{math.MinInt64, USD}, {-1, USD}}, Money{}, ErrOverflow},
+		{"max plus max overflows", USD, []Money{{math.MaxInt64, USD}, {math.MaxInt64, USD}}, Money{}, ErrOverflow},
+		{"min plus min overflows", USD, []Money{{math.MinInt64, USD}, {math.MinInt64, USD}}, Money{}, ErrOverflow},
+
+		// A running int64 total would overflow on the second money, but the
+		// total is representable, so Sum must succeed regardless of order.
+		{"partial sum overflows, total fits", USD,
+			[]Money{{math.MaxInt64, USD}, {math.MaxInt64, USD}, {math.MinInt64, USD}},
+			Money{math.MaxInt64 - 1, USD}, nil},
+		{"same monies reordered", USD,
+			[]Money{{math.MaxInt64, USD}, {math.MinInt64, USD}, {math.MaxInt64, USD}},
+			Money{math.MaxInt64 - 1, USD}, nil},
+		{"partial sum underflows, total fits", USD,
+			[]Money{{math.MinInt64, USD}, {math.MinInt64, USD}, {math.MaxInt64, USD}, {math.MaxInt64, USD}},
+			Money{-2, USD}, nil},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := Sum(tc.currency, tc.ms)
+			if !errors.Is(err, tc.wantErr) {
+				t.Errorf("Sum(%q, %v) error = %v, want %v", tc.currency, tc.ms, err, tc.wantErr)
+			}
+			if got != tc.want {
+				t.Errorf("Sum(%q, %v) = %v, want %v", tc.currency, tc.ms, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSumDoesNotModifyInput(t *testing.T) {
+	ms := []Money{{500, USD}, {-200, USD}}
+	want := []Money{{500, USD}, {-200, USD}}
+	if _, err := Sum(USD, ms); err != nil {
+		t.Fatalf("Sum(%q, %v) error = %v, want nil", USD, ms, err)
+	}
+	for i := range ms {
+		if ms[i] != want[i] {
+			t.Errorf("Sum modified ms[%d] = %v, want %v", i, ms[i], want[i])
+		}
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/big"
 )
 
 var (
@@ -125,4 +126,24 @@ func (a Money) String() string {
 		return fmt.Sprintf("%s%d %s", sign, u, a.Currency)
 	}
 	return fmt.Sprintf("%s%d.%0*d %s", sign, u/d, ci.Exponent, u%d, a.Currency)
+}
+
+// Sums all the monies in ms.
+// All monies must be in the same currency c.
+// If ms is empty, a valid zero money in currncy c is returned.
+func Sum(c Currency, ms []Money) (Money, error) {
+	if !c.IsValid() {
+		return Money{}, fmt.Errorf("%w: %v", ErrInvalidCurrency, c)
+	}
+	sum := big.NewInt(0)
+	for _, m := range ms {
+		if m.Currency != c {
+			return Money{}, fmt.Errorf("%w: %q in a sum of %q", ErrCurrencyMismatch, m.Currency, c)
+		}
+		sum.Add(sum, big.NewInt(m.MinorUnits))
+	}
+	if !sum.IsInt64() {
+		return Money{}, fmt.Errorf("%w: %v cannot be represented by int64", ErrOverflow, sum)
+	}
+	return Money{Currency: c, MinorUnits: sum.Int64()}, nil
 }
