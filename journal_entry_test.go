@@ -34,12 +34,12 @@ func TestJournalEntryValidate(t *testing.T) {
 			wantErr: ErrNotEnoughPostings,
 		},
 		{
-			name: "posting count is checked before currency",
+			name: "currency is checked before posting count",
 			fc:   "XXX",
 			je: JournalEntry{Postings: []Posting{
 				{FunctionalAmount: Money{1, EUR}},
 			}},
-			wantErr: ErrNotEnoughPostings,
+			wantErr: ErrInvalidCurrency,
 		},
 		{
 			name: "two postings balance",
@@ -125,6 +125,16 @@ func TestJournalEntryValidate(t *testing.T) {
 		{
 			name: "invalid functional currency",
 			fc:   "XXX",
+			je: JournalEntry{Postings: []Posting{
+				{FunctionalAmount: Money{500, USD}},
+				{FunctionalAmount: Money{-500, USD}},
+			}},
+			wantErr: ErrInvalidCurrency,
+		},
+		{
+			// The zero value of Ledger.FunctionalCurrency.
+			name: "empty functional currency",
+			fc:   "",
 			je: JournalEntry{Postings: []Posting{
 				{FunctionalAmount: Money{500, USD}},
 				{FunctionalAmount: Money{-500, USD}},

@@ -52,17 +52,21 @@ type JournalEntry struct {
 	Postings []Posting
 }
 
-// Validates JournaleEntry against Ledger's functional currency (fc).
+// Validates JournalEntry against Ledger's functional currency (fc).
 // JournalEntry is valid:
+// - functional currency (fd) is valid
 // - at least 2 Postings
 // - Postings sum to zero in their FunctionalAmount
 func (je JournalEntry) Validate(fc Currency) error {
+	if !fc.IsValid() {
+		return fmt.Errorf("%w: %q", ErrInvalidCurrency, fc)
+	}
 	if len(je.Postings) < 2 {
 		return fmt.Errorf("%w: %d posting(s)", ErrNotEnoughPostings, len(je.Postings))
 	}
-	var ms []Money
-	for _, p := range je.Postings {
-		ms = append(ms, p.FunctionalAmount)
+	ms := make([]Money, len(je.Postings))
+	for i, p := range je.Postings {
+		ms[i] = p.FunctionalAmount
 	}
 	sum, err := SumMoney(fc, ms)
 	if err != nil {

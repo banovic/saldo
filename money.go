@@ -40,8 +40,6 @@ var currencyInfo = map[Currency]CurrencyInfo{
 	TND: {Name: "Tunisian dinar", Num: "788", Exponent: 3},
 }
 
-// Returns (CurrencyInfo, true) for called Currency, if Currency is valid and defined.
-// Returns (zero CurrencyInfo, false) if called Currency is invalid.
 // Info() returns the CurrencyInfo for c and reports whether c is a defined currency.
 func (c Currency) Info() (CurrencyInfo, bool) {
 	ci, ok := currencyInfo[c]
@@ -63,6 +61,8 @@ func (ci CurrencyInfo) MinorUnitsPerUnit() (uint64, bool) {
 		return 100, true
 	case 3:
 		return 1000, true
+	case 4:
+		return 10000, true
 	}
 	return 0, false
 }
@@ -75,66 +75,55 @@ type Money struct {
 	Currency   Currency
 }
 
-func NewMoney(units int64, currency Currency) (Money, error) {
-	if !currency.IsValid() {
-		return Money{}, fmt.Errorf("%w: %q", ErrInvalidCurrency, currency)
+func (m Money) IsValid() bool {
+	return m.Currency.IsValid()
+}
+
+func (m Money) IsZeroAmount() bool {
+	return m.MinorUnits == 0
+}
+
+func (m Money) Mul(k int64) (Money, error) {
+	if !m.IsValid() {
+		return Money{}, fmt.Errorf("%w: %v", ErrInvalidMoney, m)
 	}
-	return Money{MinorUnits: units, Currency: currency}, nil
-}
-
-func ZeroMoney(currency Currency) (Money, error) {
-	return NewMoney(0, currency)
-}
-
-func (a Money) IsValid() bool {
-	return a.Currency.IsValid()
-}
-
-func (a Money) IsZeroAmount() bool {
-	return a.MinorUnits == 0
-}
-
-func (a Money) Mul(k int64) (Money, error) {
-	if !a.IsValid() {
-		return Money{}, fmt.Errorf("%w: %v", ErrInvalidMoney, a)
-	}
-	if a.MinorUnits == 0 || k == 0 {
-		return Money{MinorUnits: 0, Currency: a.Currency}, nil
+	if m.MinorUnits == 0 || k == 0 {
+		return Money{MinorUnits: 0, Currency: m.Currency}, nil
 	}
 	// p/k test below cannot detect these values; see 'Go defines MinInt64 / -1 as MinInt64'
 	// math.MinInt64 * -1 = math.MinInt64, but this value has overflown already
 	// math.MinInt64 / -1 = math.MinInt64, but this value has overflown already
-	if a.MinorUnits == math.MinInt64 && k == -1 {
-		return Money{}, fmt.Errorf("%w: %v times %d", ErrOverflow, a, k)
+	if m.MinorUnits == math.MinInt64 && k == -1 {
+		return Money{}, fmt.Errorf("%w: %v times %d", ErrOverflow, m, k)
 	}
-	p := a.MinorUnits * k
-	if p/k != a.MinorUnits {
-		return Money{}, fmt.Errorf("%w: %v times %d", ErrOverflow, a, k)
+	p := m.MinorUnits * k
+	if p/k != m.MinorUnits {
+		return Money{}, fmt.Errorf("%w: %v times %d", ErrOverflow, m, k)
 	}
-	return Money{MinorUnits: p, Currency: a.Currency}, nil
+	return Money{MinorUnits: p, Currency: m.Currency}, nil
 }
 
 // Displaying money amounts to end user usually takes into account user's location.
 // This method does not do that - it's just for simple display of Money struct.
-func (a Money) String() string {
-	ci, ok1 := a.Currency.Info()
+func (m Money) String() string {
+	ci, ok1 := m.Currency.Info()
 	d, ok2 := ci.MinorUnitsPerUnit()
 	if !ok1 || !ok2 {
-		return fmt.Sprintf("%d minor units of %q", a.MinorUnits, a.Currency)
+		return fmt.Sprintf("%d minor units of %q", m.MinorUnits, m.Currency)
 	}
-	sign, u := "", uint64(a.MinorUnits)
-	if a.MinorUnits < 0 {
+	sign, u := "", uint64(m.MinorUnits)
+	if m.MinorUnits < 0 {
 		sign, u = "-", -u
 	}
 	if ci.Exponent == 0 {
-		return fmt.Sprintf("%s%d %s", sign, u, a.Currency)
+		return fmt.Sprintf("%s%d %s", sign, u, m.Currency)
 	}
-	return fmt.Sprintf("%s%d.%0*d %s", sign, u/d, ci.Exponent, u%d, a.Currency)
+	return fmt.Sprintf("%s%d.%0*d %s", sign, u/d, ci.Exponent, u%d, m.Currency)
 }
 
-// Sums all the monies in ms.
+// SumMoney sums all the monies in ms.
 // All monies must be in the same currency c.
-// If ms is empty, a valid zero money in currncy c is returned.
+// If ms is empty, a valid zero money in currency c is returned.
 func SumMoney(c Currency, ms []Money) (Money, error) {
 	if !c.IsValid() {
 		return Money{}, fmt.Errorf("%w: %v", ErrInvalidCurrency, c)

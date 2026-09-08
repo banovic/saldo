@@ -2,7 +2,9 @@ package saldo
 
 import (
 	"errors"
+	"maps"
 	"math"
+	"slices"
 	"testing"
 )
 
@@ -42,58 +44,6 @@ func TestCurrencyInfo(t *testing.T) {
 			got, ok := tc.currency.Info()
 			if ok != tc.wantOk || got != tc.want {
 				t.Errorf("%q.Info() = %v, %t, want %v, %t", tc.currency, got, ok, tc.want, tc.wantOk)
-			}
-		})
-	}
-}
-
-func TestNewMoney(t *testing.T) {
-	testCases := []struct {
-		name     string
-		units    int64
-		currency Currency
-		want     Money
-		wantErr  error
-	}{
-		{"empty currency", 0, "", Money{}, ErrInvalidCurrency},
-		{"invalid currency", 0, "X12", Money{}, ErrInvalidCurrency},
-		{"invalid currency 2", 10, "X12", Money{}, ErrInvalidCurrency},
-		{"valid currency", 10, RSD, Money{MinorUnits: 10, Currency: RSD}, nil},
-		{"valid currency 2", -10, EUR, Money{MinorUnits: -10, Currency: EUR}, nil},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := NewMoney(tc.units, tc.currency)
-			if !errors.Is(err, tc.wantErr) {
-				t.Errorf("NewMoney(%d, %q) error = %v, want %v", tc.units, tc.currency, err, tc.wantErr)
-			}
-			if got != tc.want {
-				t.Errorf("NewMoney(%d, %q) = %v want %v", tc.units, tc.currency, got, tc.want)
-			}
-		})
-	}
-}
-
-func TestZeroMoney(t *testing.T) {
-	testCases := []struct {
-		name     string
-		currency Currency
-		want     Money
-		wantErr  error
-	}{
-		{"empty currency", "", Money{}, ErrInvalidCurrency},
-		{"invalid currency", "X12", Money{}, ErrInvalidCurrency},
-		{"invalid currency 2", "usd", Money{}, ErrInvalidCurrency},
-		{"valid currency", RSD, Money{MinorUnits: 0, Currency: RSD}, nil},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := ZeroMoney(tc.currency)
-			if !errors.Is(err, tc.wantErr) {
-				t.Errorf("ZeroMoney(%q) error = %v, want %v", tc.currency, err, tc.wantErr)
-			}
-			if got != tc.want {
-				t.Errorf("ZeroMoney(%q) = %v want %v", tc.currency, got, tc.want)
 			}
 		})
 	}
@@ -269,5 +219,67 @@ func TestMoneyIsZeroAmount(t *testing.T) {
 				t.Errorf("%v.IsZeroAmount() = %t, want %t", tc.a, got, tc.want)
 			}
 		})
+	}
+}
+
+// currencyInfo is hand-maintained data. These tests walk the table itself
+// rather than a list of cases, so a currency added later is checked too.
+
+func TestCurrencyInfoTableShape(t *testing.T) {
+	for _, c := range slices.Sorted(maps.Keys(currencyInfo)) {
+		ci := currencyInfo[c]
+		t.Run(string(c), func(t *testing.T) {
+			if len(c) != 3 {
+				t.Errorf("code %q has %d characters, want 3", c, len(c))
+			}
+			for _, r := range c {
+				if r < 'A' || r > 'Z' {
+					t.Errorf("code %q contains %q, want uppercase A-Z", c, r)
+				}
+			}
+			if ci.Name == "" {
+				t.Errorf("%q has no Name", c)
+			}
+			if len(ci.Num) != 3 {
+				t.Errorf("%q has Num %q with %d characters, want 3", c, ci.Num, len(ci.Num))
+			}
+			for _, r := range ci.Num {
+				if r < '0' || r > '9' {
+					t.Errorf("%q has Num %q containing %q, want digits", c, ci.Num, r)
+				}
+			}
+			// Guards the unreachable branch in MinorUnitsPerUnit: it is only
+			// unreachable as long as every exponent in the table is supported.
+			if _, ok := ci.MinorUnitsPerUnit(); !ok {
+				t.Errorf("%q has Exponent %d, which MinorUnitsPerUnit does not support", c, ci.Exponent)
+			}
+		})
+	}
+}
+
+func TestCurrencyInfoNumIsUnique(t *testing.T) {
+	seen := make(map[string]Currency)
+	for _, c := range slices.Sorted(maps.Keys(currencyInfo)) {
+		num := currencyInfo[c].Num
+		if prev, ok := seen[num]; ok {
+			t.Errorf("Num %q is used by both %q and %q", num, prev, c)
+			continue
+		}
+		seen[num] = c
+	}
+}
+
+// A Currency constant with no row in currencyInfo would be silently invalid:
+// EUR.IsValid() would report false. The length check catches the reverse,
+// a row added to the table with no constant declared for it.
+func TestCurrencyConstantsHaveTableRows(t *testing.T) {
+	constants := []Currency{EUR, RSD, USD, JPY, TND}
+	for _, c := range constants {
+		if !c.IsValid() {
+			t.Errorf("%q is declared as a constant but has no row in currencyInfo", c)
+		}
+	}
+	if len(constants) != len(currencyInfo) {
+		t.Errorf("%d Currency constants but %d rows in currencyInfo", len(constants), len(currencyInfo))
 	}
 }
