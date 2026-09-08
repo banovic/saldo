@@ -40,12 +40,15 @@ var currencyInfo = map[Currency]CurrencyInfo{
 	TND: {Name: "Tunisian dinar", Num: "788", Exponent: 3},
 }
 
-// Info() returns the CurrencyInfo for c and reports whether c is a defined currency.
+// Info returns the CurrencyInfo for c and reports whether c is a defined currency.
 func (c Currency) Info() (CurrencyInfo, bool) {
 	ci, ok := currencyInfo[c]
 	return ci, ok
 }
 
+// IsValid checks if Currency is valid.
+// Currency is valid:
+// - must exists as key in currencyInfo map.
 func (c Currency) IsValid() bool {
 	_, ok := c.Info()
 	return ok

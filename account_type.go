@@ -13,7 +13,9 @@ const (
 	Expense   AccountType = "expense"
 )
 
-// IsValid reports whether at is one of the five defined account types.
+// IsValid checks if AccountType is valid.
+// AccountType is valid:
+// - must be one of the five defined account types.
 func (at AccountType) IsValid() bool {
 	switch at {
 	case Asset, Liability, Equity, Revenue, Expense:

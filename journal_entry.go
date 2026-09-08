@@ -52,9 +52,9 @@ type JournalEntry struct {
 	Postings []Posting
 }
 
-// Validates JournalEntry against Ledger's functional currency (fc).
+// Validate validates JournalEntry against Ledger's functional currency (fc).
 // JournalEntry is valid:
-// - functional currency (fd) is valid
+// - functional currency (fc) is valid
 // - at least 2 Postings
 // - Postings sum to zero in their FunctionalAmount
 func (je JournalEntry) Validate(fc Currency) error {

@@ -15,6 +15,6 @@ type Posting struct {
 	// Amount in the Currency that will be booked - Ledger Functional Currency.
 	FunctionalAmount Money
 
-	// Exchange rate between Currencies for Document and Functional Amounts.
+	// Exchange rate between Currencies for Transaction and Functional Amount's Currencies.
 	ExchangeRateID ExchangeRateID
 }

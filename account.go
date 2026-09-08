@@ -3,6 +3,9 @@ package saldo
 // AccountID is ID of Account, it must be Valid and non-empty ("" is invalid).
 type AccountID string
 
+// IsValid checks if AccountID is valid.
+// AccountID is valid:
+// - must be non-empty ("" is invalid).
 func (aid AccountID) IsValid() bool {
 	return aid != ""
 }
