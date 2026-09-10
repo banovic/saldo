@@ -1,2 +1,3 @@
 - Minimal dependencies. Ask before adding anything.
 - No assertion libraries. Table-driven tests with stdlib testing.
+- Be brief. Answer the question asked, then stop. No multi-section essays.
