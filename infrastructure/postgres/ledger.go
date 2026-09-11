@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"errors"
 
 	"github.com/banovic/saldo/domain"
@@ -8,9 +9,9 @@ import (
 )
 
 type ledgerRepository struct {
-	db *pgx.Tx
+	tx pgx.Tx
 }
 
-func (lr ledgerRepository) Insert(l domain.Ledger) error {
+func (lr ledgerRepository) Insert(ctx context.Context, l domain.Ledger) error {
 	return errors.New("TODO")
 }

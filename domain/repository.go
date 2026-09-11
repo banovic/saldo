@@ -1,9 +1,11 @@
 package domain
 
+import "context"
+
 type LedgerRepository interface {
-	Insert(l Ledger) error
+	Insert(ctx context.Context, l Ledger) error
 }
 
 type AccountRepository interface {
-	Insert(a Account) error
+	Insert(ctx context.Context, a Account) error
 }

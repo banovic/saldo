@@ -12,20 +12,29 @@ import (
 )
 
 func main() {
-	dbpool, err := pgxpool.New(context.Background(), os.Getenv("SALDO_DATABASE_URL"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+func run() error {
+	ctx := context.Background()
+
+	dbpool, err := pgxpool.New(ctx, os.Getenv("SALDO_DATABASE_URL"))
+	if err != nil {
+		return fmt.Errorf("create database pool: %w", err)
+	}
+
 	defer dbpool.Close()
 
 	service := app.NewService(postgres.NewUnitOfWork(dbpool), time.Now)
 
 	request := app.CreateLedgerRequest{}
-	resp, err := service.CreateLedger(request)
+	resp, err := service.CreateLedger(ctx, request)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return err
 	}
 	fmt.Printf("%v\n", resp)
+	return nil
 }
