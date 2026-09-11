@@ -7,10 +7,10 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type ledgerRepository struct {
+type accountRepository struct {
 	db *pgx.Tx
 }
 
-func (lr ledgerRepository) Insert(l domain.Ledger) error {
+func (lr accountRepository) Insert(l domain.Account) error {
 	return errors.New("TODO")
 }

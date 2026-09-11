@@ -1,6 +1,10 @@
 package app
 
-import "github.com/banovic/saldo/domain"
+import (
+	"context"
+
+	"github.com/banovic/saldo/domain"
+)
 
 type Repositories struct {
 	Ledger  domain.LedgerRepository
@@ -8,5 +12,5 @@ type Repositories struct {
 }
 
 type UnitOfWork interface {
-	Execute(work func(Repositories) error) error
+	Execute(ctx context.Context, work func(Repositories) error) error
 }
