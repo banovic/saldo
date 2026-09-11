@@ -1,11 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"os"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
-	//service := app.Service{}
-	//service.CreateLedger()
-	fmt.Println("CLI Runner")
+	dbpool, err := pgxpool.New(context.Background(), os.Getenv("SALDO_DATABASE_URL"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+	defer dbpool.Close()
 }
