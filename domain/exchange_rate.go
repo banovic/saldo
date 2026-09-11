@@ -1,4 +1,4 @@
-package saldo
+package domain
 
 import "time"
 

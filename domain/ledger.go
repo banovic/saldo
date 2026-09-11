@@ -1,4 +1,4 @@
-package saldo
+package domain
 
 // LedgerID is ID of Ledger, it must be Valid and non-empty ("" is invalid).
 type LedgerID string

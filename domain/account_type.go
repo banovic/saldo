@@ -1,4 +1,4 @@
-package saldo
+package domain
 
 // AccountType classifies an account by its role in the Accounting Equation:
 // Assets = Liabilities + Equity

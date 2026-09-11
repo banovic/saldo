@@ -1,4 +1,4 @@
-package saldo
+package domain
 
 // AccountID is ID of Account, it must be Valid and non-empty ("" is invalid).
 type AccountID string

@@ -1,4 +1,4 @@
-package saldo
+package domain
 
 // PostingID is ID of single Posting, it must be Valid and non-empty ("" is invalid).
 type PostingID string

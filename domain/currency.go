@@ -1,4 +1,4 @@
-package saldo
+package domain
 
 // Currency is ISO 4217 3 letter alphanumeric code.
 type Currency string
