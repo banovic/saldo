@@ -11,7 +11,8 @@ Early stage: domain model is real and tested; app/infrastructure/cmd are wiring 
 
 - `go test ./...` — only `domain` has tests.
 - `go vet ./...`
-- Run: see README (Postgres in docker, `SALDO_DATABASE_URL`). No schema/migrations yet.
+- Run: see README (Postgres in docker, `SALDO_DATABASE_URL`).
+- Migrate: `SALDO_DATABASE_URL=... go run ./cmd/migrate migrations`
 
 ## Architecture
 
@@ -23,9 +24,17 @@ Layering is specified in [doc.go](doc.go) — read it before structural changes.
 - `infrastructure/postgres` — `UnitOfWork` owns the tx; repositories hold `pgx.Tx`, never begin/commit.
   Translates driver errors to app errors.
 - `cmd/saldo` (CLI), `cmd/saldod` (HTTP) — config, manual constructor-injection wiring, map app error codes to exit/HTTP codes.
+- `cmd/migrate` — applies pending `*.sql` from the given dir (read from disk, not embedded).
 
 Not built yet: `app/error.go`, `cmd/saldo/config.go` (empty), `cmd/saldod/config.go` (missing),
-repository `Insert`s (return TODO), `CreateLedger` (stub), HTTP runner.
+repository `Insert`s (return TODO), `CreateLedger` (stub), HTTP runner, schema (`migrations/` is empty).
+
+## Migrations
+
+- Files in `migrations/`, named `NNNN_description.sql`; applied in filename order.
+- `migrations` table (`filename` PK, `applied_at`) created automatically; applied files are skipped.
+- Each file runs as one `Exec` (no statement splitting) in a tx together with its `migrations` insert.
+- Forward-only: no down migrations, never edit an applied file — fix with a new migration.
 
 ## Domain rules
 
@@ -40,6 +49,7 @@ repository `Insert`s (return TODO), `CreateLedger` (stub), HTTP runner.
 ## Conventions
 
 - ID/enum types: `IsValid() bool`, with doc comment listing validity rules. Aggregates: `Validate(...) error`.
+- UUIDs are v7 (stdlib `uuid.NewV7()`), stored as Postgres `uuid`.
 - Sentinel `Err*` vars wrapped with `fmt.Errorf("%w: ...")`; tests check with `errors.Is`.
 - Tests: `testCases := []struct{name ...}` + `t.Run`, messages as `f(x) = got, want want`.
 - Interface assertions: `var _ app.UnitOfWork = (*UnitOfWork)(nil)`.

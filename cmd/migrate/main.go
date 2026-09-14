@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -35,7 +36,7 @@ func appliedMigrations(ctx context.Context, db *pgx.Conn) (map[string]bool, erro
 	return filenames, nil
 }
 
-func applyMigrations(ctx context.Context, db *pgx.Conn, dir string, migrationFiles []string) error {
+func applyMigrations(ctx context.Context, db *pgx.Conn, dir string, migrationFiles []string) ([]string, error) {
 	const createMigrationsTableSQL = `
 		CREATE TABLE IF NOT EXISTS migrations (
 			filename text primary key,
@@ -43,14 +44,20 @@ func applyMigrations(ctx context.Context, db *pgx.Conn, dir string, migrationFil
 		);
 	`
 
+	const recordMigrationSQL = `
+		INSERT INTO migrations (filename) VALUES ($1);
+	`
+
 	if _, err := db.Exec(ctx, createMigrationsTableSQL); err != nil {
-		return err
+		return nil, err
 	}
 
 	applied, err := appliedMigrations(ctx, db)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	var success []string
 
 	for _, file := range migrationFiles {
 		if applied[file] {
@@ -59,59 +66,54 @@ func applyMigrations(ctx context.Context, db *pgx.Conn, dir string, migrationFil
 
 		content, err := os.ReadFile(filepath.Join(dir, file))
 		if err != nil {
-			return err
+			return success, fmt.Errorf("apply %s: %w", file, err)
 		}
 
-		tx, err := db.Begin(ctx)
+		err = pgx.BeginFunc(ctx, db, func(tx pgx.Tx) error {
+			if _, err := tx.Exec(ctx, string(content)); err != nil {
+				return err
+			}
+
+			_, err := tx.Exec(ctx, recordMigrationSQL, file)
+
+			return err
+		})
 		if err != nil {
-			return err
-		}
-		defer tx.Rollback(ctx)
-
-		if _, err = tx.Exec(ctx, string(content)); err != nil {
-			return err
+			return success, fmt.Errorf("apply %s: %w", file, err)
 		}
 
-		recordMigration := `
-			INSERT INTO migrations (filename) VALUES ($1);
-		`
-		if _, err = tx.Exec(ctx, recordMigration, file); err != nil {
-			return err
-		}
-		if err := tx.Commit(ctx); err != nil {
-			return err
-		}
+		success = append(success, file)
 	}
-	return nil
+	return success, nil
 }
 
-func run(dir string) error {
-	files, err := os.ReadDir(dir)
+func run(dir string) ([]string, error) {
+	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var filesToProcess []string
-	for _, file := range files {
+	for _, file := range entries {
 		if !file.IsDir() && strings.HasSuffix(file.Name(), ".sql") {
 			filesToProcess = append(filesToProcess, file.Name())
 		}
 	}
 
 	if len(filesToProcess) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	ctx := context.Background()
 
-	dbUrl := os.Getenv("SALDO_DATABASE_URL")
-	if dbUrl == "" {
-		return fmt.Errorf("missing env var SALDO_DATABASE_URL")
+	dbURL := os.Getenv("SALDO_DATABASE_URL")
+	if dbURL == "" {
+		return nil, errors.New("missing env var SALDO_DATABASE_URL")
 	}
 
-	db, err := pgx.Connect(ctx, dbUrl)
+	db, err := pgx.Connect(ctx, dbURL)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer db.Close(ctx)
@@ -125,11 +127,16 @@ func main() {
 		os.Exit(2)
 	}
 
-	if err := run(os.Args[1]); err != nil {
+	success, err := run(os.Args[1])
+	// Print executed migrations, as some could have failed.
+	for _, file := range success {
+		fmt.Printf("Applied migration: %s\n", file)
+	}
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
-
-	fmt.Fprintf(os.Stdout, "Successfully applied migrations\n")
-	os.Exit(0)
+	if len(success) == 0 {
+		fmt.Printf("No migrations applied\n")
+	}
 }
