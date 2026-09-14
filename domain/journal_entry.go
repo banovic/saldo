@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"uuid"
 )
 
 var (
@@ -12,7 +13,7 @@ var (
 )
 
 // JournalEntryID is ID of single Journal Entry, can be empty ("" is valid).
-type JournalEntryID string
+type JournalEntryID uuid.UUID
 
 // JournalEntry is single accounting event - an atomic unit of Ledger.
 //
@@ -27,20 +28,20 @@ type JournalEntry struct {
 	LedgerID       LedgerID
 
 	// IdempotencyKey is supplied by the client for each JournalEntry client wants to record.
-	// It is used to guarantee that the Transaction is written exactly once.
+	// It is used to guarantee that the JournalEntry is written exactly once.
 	IdempotencyKey string
 
 	// SourceDocumentReferenceID is reference to document which motivated JournalEntry (invoice, receipt number, etc.)
 	SourceDocumentReferenceID string
 
-	// When event happened in the world.
-	OccurredOn time.Time
+	// When event happened in the world. Stored as UTC timestamp.
+	OccurredAt time.Time
 
-	// In which period it lands in
+	// In which period it lands in. Stored as Date.
 	PostedOn time.Time
 
-	// When event was recorded by the system.
-	RecordedOn time.Time
+	// When event was recorded by the system. Stored as UTC timestamp.
+	RecordedAt time.Time
 
 	// Description is natural text describing JournalEntry.
 	Description string

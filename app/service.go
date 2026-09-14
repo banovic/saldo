@@ -1,12 +1,16 @@
 package app
 
-import "time"
+import (
+	"time"
+	"uuid"
+)
 
 type Service struct {
-	uow UnitOfWork
-	now func() time.Time
+	uow         UnitOfWork
+	now         func() time.Time
+	idGenerator func() uuid.UUID
 }
 
-func NewService(uow UnitOfWork, now func() time.Time) *Service {
-	return &Service{uow: uow, now: now}
+func NewService(uow UnitOfWork, now func() time.Time, idGenerator func() uuid.UUID) *Service {
+	return &Service{uow: uow, now: now, idGenerator: idGenerator}
 }

@@ -12,7 +12,7 @@ Early stage: domain model is real and tested; app/infrastructure/cmd are wiring 
 - `go test ./...` — only `domain` has tests.
 - `go vet ./...`
 - Run: see README (Postgres in docker, `SALDO_DATABASE_URL`).
-- Migrate: `SALDO_DATABASE_URL=... go run ./cmd/migrate migrations`
+- Migrate: `SALDO_DATABASE_URL=... go run ./cmd/migrate schema`
 
 ## Architecture
 
@@ -27,11 +27,11 @@ Layering is specified in [doc.go](doc.go) — read it before structural changes.
 - `cmd/migrate` — applies pending `*.sql` from the given dir (read from disk, not embedded).
 
 Not built yet: `app/error.go`, `cmd/saldo/config.go` (empty), `cmd/saldod/config.go` (missing),
-repository `Insert`s (return TODO), `CreateLedger` (stub), HTTP runner, schema (`migrations/` is empty).
+repository `Insert`s (return TODO), `CreateLedger` (stub), HTTP runner, schema (`schema/0001_init.sql` in progress).
 
 ## Migrations
 
-- Files in `migrations/`, named `NNNN_description.sql`; applied in filename order.
+- Files in `schema/` (dir passed as first arg to `cmd/migrate`), named `NNNN_description.sql`; applied in filename order.
 - `migrations` table (`filename` PK, `applied_at`) created automatically; applied files are skipped.
 - Each file runs as one `Exec` (no statement splitting) in a tx together with its `migrations` insert.
 - Forward-only: no down migrations, never edit an applied file — fix with a new migration.

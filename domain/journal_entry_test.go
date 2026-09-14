@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"testing"
+	"uuid"
 )
 
 func TestJournalEntryValidate(t *testing.T) {
@@ -82,12 +83,12 @@ func TestJournalEntryValidate(t *testing.T) {
 			name: "fields other than Postings are ignored",
 			fc:   USD,
 			je: JournalEntry{
-				JournalEntryID:            "je-1",
-				LedgerID:                  "ledger-1",
+				JournalEntryID:            JournalEntryID(uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ea0")),
+				LedgerID:                  LedgerID(uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8e9f")),
 				IdempotencyKey:            "key-1",
 				SourceDocumentReferenceID: "invoice-1",
 				Description:               "a sale",
-				Reverses:                  "je-0",
+				Reverses:                  JournalEntryID(uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ea1")),
 				Postings: []Posting{
 					{FunctionalAmount: Money{500, USD}},
 					{FunctionalAmount: Money{-500, USD}},

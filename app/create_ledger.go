@@ -7,7 +7,6 @@ import (
 )
 
 type CreateLedgerRequest struct {
-	LedgerID           domain.LedgerID
 	Name               string
 	FunctionalCurrency domain.Currency
 }

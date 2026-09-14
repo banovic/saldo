@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"uuid"
 
 	"github.com/banovic/saldo/app"
 	"github.com/banovic/saldo/infrastructure/postgres"
@@ -28,7 +29,7 @@ func run() error {
 
 	defer dbpool.Close()
 
-	service := app.NewService(postgres.NewUnitOfWork(dbpool), time.Now)
+	service := app.NewService(postgres.NewUnitOfWork(dbpool), time.Now, uuid.NewV7)
 
 	request := app.CreateLedgerRequest{}
 	resp, err := service.CreateLedger(ctx, request)
