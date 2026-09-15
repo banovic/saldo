@@ -13,5 +13,10 @@ type Ledger struct {
 	LedgerID           LedgerID
 	Name               string
 	FunctionalCurrency Currency
-	CreatedAt          time.Time
+
+	// ReportingTimeZone is used to derive PostedOn dates in journal entries from OccurredAt timestamp.
+	ReportingTimeZone TimeZone
+
+	// When Ledger was created. Timestamp in UTC.
+	CreatedAt time.Time
 }
