@@ -38,7 +38,7 @@ type JournalEntry struct {
 	OccurredAt time.Time
 
 	// In which period it lands in. Stored as Date.
-	PostedOn time.Time
+	PostedOn Date
 
 	// When event was recorded by the system. Stored as UTC timestamp.
 	RecordedAt time.Time
