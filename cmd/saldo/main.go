@@ -38,6 +38,7 @@ func run() error {
 	request := app.CreateLedgerRequest{}
 	resp, err := service.CreateLedger(ctx, request)
 	if err != nil {
+		// TODO err needs to be mapped to response codes
 		return err
 	}
 	fmt.Printf("%v\n", resp)

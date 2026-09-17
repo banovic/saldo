@@ -6,22 +6,35 @@ import (
 	"time"
 )
 
+var (
+	ErrInvalidTimeZone = errors.New("invalid time zone")
+)
+
 type TimeZone string
 
 // NewTimeZone creates a new valid TimeZone.
 // It returns an error if s is unknown timezone.
 func NewTimeZone(s string) (TimeZone, error) {
-	switch s {
+	tz := TimeZone(s)
+	if err := tz.Validate(); err != nil {
+		return "", err
+	}
+	return tz, nil
+}
+
+func (tz TimeZone) Validate() error {
+	switch tz {
 	case "":
 		// time.LoadLocation resolves this as UTC, ie as valid.
-		return "", errors.New("time zone must not be empty")
+		return fmt.Errorf("%w: must not be empty", ErrInvalidTimeZone)
 	case "Local":
 		// Resolves to the host's zone, which is not a durable identity.
-		return "", errors.New(`time zone "Local" is not permitted`)
+		return fmt.Errorf("%w: must not be %q", ErrInvalidTimeZone, tz)
 	}
 
-	if _, err := time.LoadLocation(s); err != nil {
-		return "", fmt.Errorf("invalid timezone %q: %w", s, err)
+	if _, err := time.LoadLocation(string(tz)); err != nil {
+		return fmt.Errorf("%w: %q", ErrInvalidTimeZone, tz)
 	}
-	return TimeZone(s), nil
+
+	return nil
 }

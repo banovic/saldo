@@ -8,6 +8,28 @@ import (
 	"testing"
 )
 
+func TestMoneyValidate(t *testing.T) {
+	testCases := []struct {
+		name    string
+		a       Money
+		wantErr error
+	}{
+		{"valid", Money{500, USD}, nil},
+		{"zero amount is valid", Money{0, USD}, nil},
+		{"negative amount is valid", Money{-500, USD}, nil},
+		{"zero value money", Money{}, ErrInvalidMoney},
+		{"unknown currency", Money{500, "XXX"}, ErrInvalidMoney},
+		{"unknown currency keeps the currency cause", Money{500, "XXX"}, ErrInvalidCurrency},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := tc.a.Validate(); !errors.Is(err, tc.wantErr) {
+				t.Errorf("%v.Validate() = %v, want %v", tc.a, err, tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestMoneyMul(t *testing.T) {
 	testCases := []struct {
 		name    string
@@ -17,6 +39,7 @@ func TestMoneyMul(t *testing.T) {
 		wantErr error
 	}{
 		{"invalid money", Money{5, "XXX"}, 3, Money{}, ErrInvalidMoney},
+		{"invalid money keeps the currency cause", Money{5, "XXX"}, 3, Money{}, ErrInvalidCurrency},
 		{"times zero", Money{500, USD}, 0, Money{0, USD}, nil},
 		{"zero times k", Money{0, USD}, 7, Money{0, USD}, nil},
 		{"identity", Money{500, USD}, 1, Money{500, USD}, nil},
@@ -229,13 +252,13 @@ func TestCurrencyInfoNumIsUnique(t *testing.T) {
 }
 
 // A Currency constant with no row in currencyInfo would be silently invalid:
-// EUR.IsValid() would report false. The length check catches the reverse,
+// EUR.Validate() would return an error. The length check catches the reverse,
 // a row added to the table with no constant declared for it.
 func TestCurrencyConstantsHaveTableRows(t *testing.T) {
 	constants := []Currency{EUR, RSD, USD, JPY, TND}
 	for _, c := range constants {
-		if !c.IsValid() {
-			t.Errorf("%q is declared as a constant but has no row in currencyInfo", c)
+		if err := c.Validate(); err != nil {
+			t.Errorf("%q is declared as a constant but has no row in currencyInfo: %v", c, err)
 		}
 	}
 	if len(constants) != len(currencyInfo) {

@@ -1,5 +1,14 @@
 package domain
 
+import (
+	"errors"
+	"fmt"
+)
+
+var (
+	ErrInvalidCurrency = errors.New("invalid currency")
+)
+
 // Currency is ISO 4217 3 letter alphanumeric code.
 type Currency string
 
@@ -32,12 +41,12 @@ func (c Currency) Info() (CurrencyInfo, bool) {
 	return ci, ok
 }
 
-// IsValid checks if Currency is valid.
-// Currency is valid:
-// - must exists as key in currencyInfo map.
-func (c Currency) IsValid() bool {
-	_, ok := c.Info()
-	return ok
+// Validates the currency. Currency is valid if has entry in currencyInfo map.
+func (c Currency) Validate() error {
+	if _, ok := c.Info(); !ok {
+		return fmt.Errorf("%w: %q", ErrInvalidCurrency, c)
+	}
+	return nil
 }
 
 func (ci CurrencyInfo) MinorUnitsPerUnit() (uint64, bool) {

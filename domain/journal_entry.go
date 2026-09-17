@@ -59,19 +59,22 @@ type JournalEntry struct {
 // - at least 2 Postings
 // - Postings sum to zero in their FunctionalAmount
 func (je JournalEntry) Validate(fc Currency) error {
-	if !fc.IsValid() {
-		return fmt.Errorf("%w: %q", ErrInvalidCurrency, fc)
+	if err := fc.Validate(); err != nil {
+		return fmt.Errorf("functional currency: %w", err)
 	}
 	if len(je.Postings) < 2 {
 		return fmt.Errorf("%w: %d posting(s)", ErrNotEnoughPostings, len(je.Postings))
 	}
 	ms := make([]Money, len(je.Postings))
 	for i, p := range je.Postings {
+		if p.FunctionalAmount.Currency != fc {
+			return fmt.Errorf("posting %d: %w: %q (posting) vs %q (functional)", i, ErrCurrencyMismatch, p.FunctionalAmount.Currency, fc)
+		}
 		ms[i] = p.FunctionalAmount
 	}
 	sum, err := SumMoney(fc, ms)
 	if err != nil {
-		return err
+		return fmt.Errorf("sum postings: %w", err)
 	}
 	if !sum.IsZeroAmount() {
 		return fmt.Errorf("%w: %v", ErrPostingsSumNotZero, sum)

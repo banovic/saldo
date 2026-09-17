@@ -13,7 +13,6 @@
 //     Each file is one use case.
 //     UnitOfWork interface is defined here and it allows transactions across aggregate or entity boundaries.
 //     Uses UnitOfWork for all db access.
-//     Defines Error type with Code which wraps domain error.
 //     Depends on domain.
 //
 //   - infrastructure - Implementation of interfaces (adapters) from domain and app.
@@ -37,4 +36,11 @@
 //   - cmd/saldo - CLI runner.
 //     Defines Config struct cmd/saldo/config.go which is used only by this runner.
 //     Config is read from environment or passed through CLI arguments.
+//
+// # Errors
+//
+// Runners will receive app package errors, which wraps domain and infrastructure errors.
+// They (runners) map these errors to the outgoing error messages and codes (HTTP codes, status codes for CLI, etc).
+// Error sentinel should exist only when a caller would act on it differently - this is the rule whether to use
+// sentinel error or format error in the new error.
 package saldo

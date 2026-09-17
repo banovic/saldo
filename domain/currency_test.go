@@ -1,24 +1,25 @@
 package domain
 
 import (
+	"errors"
 	"testing"
 )
 
-func TestCurrencyIsValid(t *testing.T) {
+func TestCurrencyValidate(t *testing.T) {
 	testCases := []struct {
 		name     string
 		currency Currency
-		want     bool
+		wantErr  error
 	}{
-		{"empty currency", "", false},
-		{"invalid currency", "X12", false},
-		{"invalid currency 2, ISO 4217 codes are uppercase", "usd", false},
-		{"valid currency", USD, true},
+		{"empty currency", "", ErrInvalidCurrency},
+		{"invalid currency", "X12", ErrInvalidCurrency},
+		{"invalid currency 2, ISO 4217 codes are uppercase", "usd", ErrInvalidCurrency},
+		{"valid currency", USD, nil},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := tc.currency.IsValid(); got != tc.want {
-				t.Errorf("%q.IsValid() = %t, want %t", tc.currency, got, tc.want)
+			if err := tc.currency.Validate(); !errors.Is(err, tc.wantErr) {
+				t.Errorf("%q.Validate() = %v, want %v", tc.currency, err, tc.wantErr)
 			}
 		})
 	}

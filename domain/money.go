@@ -8,7 +8,6 @@ import (
 )
 
 var (
-	ErrInvalidCurrency  = errors.New("invalid currency")
 	ErrCurrencyMismatch = errors.New("currency mismatch")
 	ErrInvalidMoney     = errors.New("invalid money")
 	ErrOverflow         = errors.New("overflow")
@@ -22,8 +21,11 @@ type Money struct {
 	Currency   Currency
 }
 
-func (m Money) IsValid() bool {
-	return m.Currency.IsValid()
+func (m Money) Validate() error {
+	if err := m.Currency.Validate(); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidMoney, err)
+	}
+	return nil
 }
 
 func (m Money) IsZeroAmount() bool {
@@ -31,8 +33,8 @@ func (m Money) IsZeroAmount() bool {
 }
 
 func (m Money) Mul(k int64) (Money, error) {
-	if !m.IsValid() {
-		return Money{}, fmt.Errorf("%w: %v", ErrInvalidMoney, m)
+	if err := m.Validate(); err != nil {
+		return Money{}, err
 	}
 	if m.MinorUnits == 0 || k == 0 {
 		return Money{MinorUnits: 0, Currency: m.Currency}, nil
@@ -72,8 +74,8 @@ func (m Money) String() string {
 // All monies must be in the same currency c.
 // If ms is empty, a valid zero money in currency c is returned.
 func SumMoney(c Currency, ms []Money) (Money, error) {
-	if !c.IsValid() {
-		return Money{}, fmt.Errorf("%w: %v", ErrInvalidCurrency, c)
+	if err := c.Validate(); err != nil {
+		return Money{}, err
 	}
 	sum := big.NewInt(0)
 	for _, m := range ms {

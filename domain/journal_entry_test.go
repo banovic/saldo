@@ -84,7 +84,7 @@ func TestJournalEntryValidate(t *testing.T) {
 			fc:   USD,
 			je: JournalEntry{
 				JournalEntryID:            JournalEntryID(uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ea0")),
-				LedgerID:                  LedgerID(uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8e9f")),
+				LedgerID:                  LedgerID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8e9f")},
 				IdempotencyKey:            "key-1",
 				SourceDocumentReferenceID: "invoice-1",
 				Description:               "a sale",
@@ -166,6 +166,15 @@ func TestJournalEntryValidate(t *testing.T) {
 			je: JournalEntry{Postings: []Posting{
 				{FunctionalAmount: Money{500, USD}},
 				{FunctionalAmount: Money{-500, ""}},
+			}},
+			wantErr: ErrCurrencyMismatch,
+		},
+		{
+			name: "currency mismatch is checked before the sum",
+			fc:   USD,
+			je: JournalEntry{Postings: []Posting{
+				{FunctionalAmount: Money{math.MaxInt64, USD}},
+				{FunctionalAmount: Money{math.MaxInt64, EUR}},
 			}},
 			wantErr: ErrCurrencyMismatch,
 		},

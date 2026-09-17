@@ -2,9 +2,9 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/banovic/saldo/app"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -19,21 +19,10 @@ func NewUnitOfWork(pool *pgxpool.Pool) *UnitOfWork {
 }
 
 func (uow *UnitOfWork) Execute(ctx context.Context, work func(app.Repositories) error) error {
-	tx, err := uow.pool.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("begin transaction: %w", err)
-	}
-
-	// If Commit() is successfully called first, Rollback() does nothing.
-	defer tx.Rollback(ctx)
-
-	// Create repositories with tx.
-	repositories := app.Repositories{Ledger: ledgerRepository{tx: tx}, Account: accountRepository{tx: tx}}
-
-	if err := work(repositories); err != nil {
-		return err
-	}
-
-	// Commit changes made by repositories.
-	return tx.Commit(ctx)
+	return pgx.BeginFunc(ctx, uow.pool, func(tx pgx.Tx) error {
+		// Repositories are implemented and unexported in this package.
+		// They are available to work function through app.Repositories interface.
+		repositories := app.Repositories{Ledger: ledgerRepository{tx: tx}, Account: accountRepository{tx: tx}}
+		return work(repositories)
+	})
 }
