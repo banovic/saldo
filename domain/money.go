@@ -27,9 +27,21 @@ func (m Money) Validate() error {
 	return nil
 }
 
-// IsZeroAmount checks if money amount is zero.
-func (m Money) IsZeroAmount() bool {
+// IsZero checks if money amount is zero.
+func (m Money) IsZero() bool {
 	return m.MinorUnits == 0
+}
+
+// Sign returns 1, 0, -1 if minor units is greater, equal or less than zero.
+func (m Money) Sign() int {
+	switch {
+	case m.MinorUnits < 0:
+		return -1
+	case m.MinorUnits > 0:
+		return 1
+	default:
+		return 0
+	}
 }
 
 // String returns a simple representation of money m.

@@ -178,7 +178,7 @@ func TestSumDoesNotModifyInput(t *testing.T) {
 	}
 }
 
-func TestMoneyIsZeroAmount(t *testing.T) {
+func TestMoneyIsZero(t *testing.T) {
 	testCases := []struct {
 		name string
 		a    Money
@@ -195,8 +195,30 @@ func TestMoneyIsZeroAmount(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := tc.a.IsZeroAmount(); got != tc.want {
-				t.Errorf("%v.IsZeroAmount() = %t, want %t", tc.a, got, tc.want)
+			if got := tc.a.IsZero(); got != tc.want {
+				t.Errorf("%v.IsZero() = %t, want %t", tc.a, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestMoneySign(t *testing.T) {
+	testCases := []struct {
+		name string
+		a    Money
+		want int
+	}{
+		{"zero value money", Money{}, 0},
+		{"zero amount", Money{0, USD}, 0},
+		{"positive", Money{1, USD}, 1},
+		{"negative", Money{-1, USD}, -1},
+		{"MaxInt64", Money{math.MaxInt64, USD}, 1},
+		{"MinInt64", Money{math.MinInt64, USD}, -1},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.a.Sign(); got != tc.want {
+				t.Errorf("%v.Sign() = %d, want %d", tc.a, got, tc.want)
 			}
 		})
 	}

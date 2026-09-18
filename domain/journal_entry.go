@@ -76,7 +76,7 @@ func (je JournalEntry) Validate(fc Currency) error {
 	if err != nil {
 		return fmt.Errorf("sum postings: %w", err)
 	}
-	if !sum.IsZeroAmount() {
+	if !sum.IsZero() {
 		return fmt.Errorf("%w: %v", ErrPostingsSumNotZero, sum)
 	}
 	return nil

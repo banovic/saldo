@@ -22,6 +22,7 @@ type Ledger struct {
 	CreatedAt time.Time
 }
 
+// Validate returns error if ledger is not valid.
 func (l Ledger) Validate() error {
 	if err := l.Name.Validate(); err != nil {
 		return err

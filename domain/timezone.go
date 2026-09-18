@@ -22,6 +22,7 @@ func NewTimeZone(s string) (TimeZone, error) {
 	return tz, nil
 }
 
+// Validate returns error if timezone is not valid.
 func (tz TimeZone) Validate() error {
 	switch tz {
 	case "":

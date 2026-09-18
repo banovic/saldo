@@ -46,3 +46,7 @@ type ExchangeRate struct {
 	On          time.Time
 	Description string
 }
+
+func (er ExchangeRate) IsZero() bool {
+	return er == ExchangeRate{}
+}
