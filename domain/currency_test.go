@@ -34,7 +34,7 @@ func TestCurrencyInfo(t *testing.T) {
 	}{
 		{"empty currency", "", CurrencyInfo{}, false},
 		{"invalid currency", "X12", CurrencyInfo{}, false},
-		{"valid currency", USD, CurrencyInfo{Name: "US Dollar", Num: "840", Exponent: 2}, true},
+		{"valid currency", USD, CurrencyInfo{Name: "US Dollar", Num: "840", Exponent: 2, MinorUnitsInUnit: 100}, true},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

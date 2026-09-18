@@ -17,9 +17,8 @@ func TestMoneyValidate(t *testing.T) {
 		{"valid", Money{500, USD}, nil},
 		{"zero amount is valid", Money{0, USD}, nil},
 		{"negative amount is valid", Money{-500, USD}, nil},
-		{"zero value money", Money{}, ErrInvalidMoney},
-		{"unknown currency", Money{500, "XXX"}, ErrInvalidMoney},
-		{"unknown currency keeps the currency cause", Money{500, "XXX"}, ErrInvalidCurrency},
+		{"zero value money", Money{}, ErrInvalidCurrency},
+		{"unknown currency", Money{500, "XXX"}, ErrInvalidCurrency},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -38,8 +37,7 @@ func TestMoneyMul(t *testing.T) {
 		want    Money
 		wantErr error
 	}{
-		{"invalid money", Money{5, "XXX"}, 3, Money{}, ErrInvalidMoney},
-		{"invalid money keeps the currency cause", Money{5, "XXX"}, 3, Money{}, ErrInvalidCurrency},
+		{"invalid money", Money{5, "XXX"}, 3, Money{}, ErrInvalidCurrency},
 		{"times zero", Money{500, USD}, 0, Money{0, USD}, nil},
 		{"zero times k", Money{0, USD}, 7, Money{0, USD}, nil},
 		{"identity", Money{500, USD}, 1, Money{500, USD}, nil},
@@ -230,10 +228,13 @@ func TestCurrencyInfoTableShape(t *testing.T) {
 					t.Errorf("%q has Num %q containing %q, want digits", c, ci.Num, r)
 				}
 			}
-			// Guards the unreachable branch in MinorUnitsPerUnit: it is only
-			// unreachable as long as every exponent in the table is supported.
-			if _, ok := ci.MinorUnitsPerUnit(); !ok {
-				t.Errorf("%q has Exponent %d, which MinorUnitsPerUnit does not support", c, ci.Exponent)
+			// Money.String relies on MinorUnitsInUnit being 10^Exponent.
+			want := int64(1)
+			for range ci.Exponent {
+				want *= 10
+			}
+			if ci.Exponent < 0 || ci.MinorUnitsInUnit != want {
+				t.Errorf("%q has Exponent %d and MinorUnitsInUnit %d, want Exponent >= 0 and MinorUnitsInUnit %d", c, ci.Exponent, ci.MinorUnitsInUnit, want)
 			}
 		})
 	}

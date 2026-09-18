@@ -3,13 +3,11 @@ package domain
 import (
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 )
 
 var (
 	ErrCurrencyMismatch = errors.New("currency mismatch")
-	ErrInvalidMoney     = errors.New("invalid money")
 	ErrOverflow         = errors.New("overflow")
 )
 
@@ -21,53 +19,49 @@ type Money struct {
 	Currency   Currency
 }
 
+// Validate returns errors if money currency is not valid.
 func (m Money) Validate() error {
 	if err := m.Currency.Validate(); err != nil {
-		return fmt.Errorf("%w: %w", ErrInvalidMoney, err)
+		return fmt.Errorf("money: %w", err)
 	}
 	return nil
 }
 
+// IsZeroAmount checks if money amount is zero.
 func (m Money) IsZeroAmount() bool {
 	return m.MinorUnits == 0
 }
 
-func (m Money) Mul(k int64) (Money, error) {
-	if err := m.Validate(); err != nil {
-		return Money{}, err
-	}
-	if m.MinorUnits == 0 || k == 0 {
-		return Money{MinorUnits: 0, Currency: m.Currency}, nil
-	}
-	// p/k test below cannot detect these values; see 'Go defines MinInt64 / -1 as MinInt64'
-	// math.MinInt64 * -1 = math.MinInt64, but this value has overflown already
-	// math.MinInt64 / -1 = math.MinInt64, but this value has overflown already
-	if m.MinorUnits == math.MinInt64 && k == -1 {
-		return Money{}, fmt.Errorf("%w: %v times %d", ErrOverflow, m, k)
-	}
-	p := m.MinorUnits * k
-	if p/k != m.MinorUnits {
-		return Money{}, fmt.Errorf("%w: %v times %d", ErrOverflow, m, k)
-	}
-	return Money{MinorUnits: p, Currency: m.Currency}, nil
-}
-
+// String returns a simple representation of money m.
 // Displaying money amounts to end user usually takes into account user's location.
 // This method does not do that - it's just for simple display of Money struct.
 func (m Money) String() string {
-	ci, ok1 := m.Currency.Info()
-	d, ok2 := ci.MinorUnitsPerUnit()
-	if !ok1 || !ok2 {
+	ci, ok := m.Currency.Info()
+	if !ok {
 		return fmt.Sprintf("%d minor units of %q", m.MinorUnits, m.Currency)
 	}
+	// Negate as uint64; -MinInt64 does not fit in int64
 	sign, u := "", uint64(m.MinorUnits)
 	if m.MinorUnits < 0 {
 		sign, u = "-", -u
 	}
-	if ci.Exponent == 0 {
+	d := uint64(ci.MinorUnitsInUnit)
+	if d <= 1 {
 		return fmt.Sprintf("%s%d %s", sign, u, m.Currency)
 	}
 	return fmt.Sprintf("%s%d.%0*d %s", sign, u/d, ci.Exponent, u%d, m.Currency)
+}
+
+// Mul multiplies money by given factor k.
+func (m Money) Mul(k int64) (Money, error) {
+	if err := m.Validate(); err != nil {
+		return Money{}, err
+	}
+	mul := new(big.Int).Mul(big.NewInt(k), big.NewInt(m.MinorUnits))
+	if !mul.IsInt64() {
+		return Money{}, fmt.Errorf("%w: %v cannot be represented by int64", ErrOverflow, mul)
+	}
+	return Money{MinorUnits: mul.Int64(), Currency: m.Currency}, nil
 }
 
 // SumMoney sums all the monies in ms.
