@@ -82,6 +82,9 @@ func (je JournalEntry) Validate(l Ledger) error {
 	}
 	ms := make([]Money, len(je.Postings))
 	for i, p := range je.Postings {
+		if je.JournalEntryID != p.JournalEntryID {
+			return fmt.Errorf("%w: posting %d: journal entry id %v and posting's journal entry id %v do not match", ErrInvalidJournalEntry, i, je.JournalEntryID, p.JournalEntryID)
+		}
 		if err := p.Validate(); err != nil {
 			return fmt.Errorf("%w: posting %d: %w", ErrInvalidJournalEntry, i, err)
 		}
