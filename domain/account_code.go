@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	accountCodeMinLen = 3
+	accountCodeMinLen = 1
 	accountCodeMaxLen = 100
 )
 

@@ -16,14 +16,12 @@ func TestAccountCodeValidate(t *testing.T) {
 		{"typical code", "241", nil},
 		{"alphanumeric", "A-100", nil},
 
-		{"2 chars is too short", "24", ErrInvalidAccountCode},
-		{"3 chars is the minimum", "241", nil},
+		{"1 char is the minimum", "2", nil},
 		{"100 chars is the maximum", AccountCode(strings.Repeat("1", 100)), nil},
 		{"101 chars is too long", AccountCode(strings.Repeat("1", 101)), ErrInvalidAccountCode},
 
 		// Length is counted in characters, not bytes.
-		{"2 multi-byte chars is too short, although 4 bytes", "Šđ", ErrInvalidAccountCode},
-		{"3 multi-byte chars", "Šđč", nil},
+		{"1 multi-byte char", "Š", nil},
 		{"100 multi-byte chars, although 200 bytes", AccountCode(strings.Repeat("ž", 100)), nil},
 		{"101 multi-byte chars", AccountCode(strings.Repeat("ž", 101)), ErrInvalidAccountCode},
 
