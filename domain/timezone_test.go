@@ -38,3 +38,35 @@ func TestNewTimeZone(t *testing.T) {
 		})
 	}
 }
+
+func TestTimeZoneLocation(t *testing.T) {
+	testCases := []struct {
+		name     string
+		tz       TimeZone
+		wantName string
+		wantErr  error
+	}{
+		{"IANA zone", "Europe/Belgrade", "Europe/Belgrade", nil},
+		{"UTC", "UTC", "UTC", nil},
+		{"empty", "", "", ErrInvalidTimeZone},
+		{"Local", "Local", "", ErrInvalidTimeZone},
+		{"unknown zone", "Europe/Nowhere", "", ErrInvalidTimeZone},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			loc, err := tc.tz.Location()
+			if !errors.Is(err, tc.wantErr) {
+				t.Fatalf("%q.Location() error = %v, want %v", tc.tz, err, tc.wantErr)
+			}
+			if err != nil {
+				if loc != nil {
+					t.Errorf("%q.Location() = %v, want nil", tc.tz, loc)
+				}
+				return
+			}
+			if got := loc.String(); got != tc.wantName {
+				t.Errorf("%q.Location() = %q, want %q", tc.tz, got, tc.wantName)
+			}
+		})
+	}
+}

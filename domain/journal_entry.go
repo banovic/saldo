@@ -8,27 +8,32 @@ import (
 )
 
 var (
-	ErrNotEnoughPostings  = errors.New("not enough postings")
-	ErrPostingsSumNotZero = errors.New("postings sum is not zero")
+	ErrInvalidJournalEntry = errors.New("invalid journal entry")
 )
 
-// JournalEntryID is ID of single Journal Entry, can be empty ("" is valid).
-type JournalEntryID uuid.UUID
+// JournalEntryID identifies a single Journal Entry.
+type JournalEntryID struct{ uuid.UUID }
+
+// IsZero checks if journal entry id is zero.
+func (jeid JournalEntryID) IsZero() bool {
+	return jeid.UUID == uuid.Nil()
+}
 
 // JournalEntry is single accounting event - an atomic unit of Ledger.
 //
 // An entry consists of 2 or more Postings whose FunctionalAmounts sum to zero.
 // It is written atomically all or none at all.
 //
-// Journal Entries are immutable. Delete or Update must not happen. An incorrect
-// JournalEntry is corrected with new JournalEntry, and that new JournalEntry Reverses
-// incorrect one (sets Reverses attribute).
+// Journal Entries are immutable. Delete or Update must not happen.
+// An incorrect JournalEntry is corrected with new JournalEntry, and that
+// new JournalEntry Reverses incorrect one (sets Reverses attribute).
 type JournalEntry struct {
 	JournalEntryID JournalEntryID
 	LedgerID       LedgerID
 
 	// IdempotencyKey is supplied by the client for each JournalEntry client wants to record.
-	// It is used to guarantee that the JournalEntry is written exactly once.
+	// It is used to guarantee that the JournalEntry is written exactly once per ledger.
+	// In database view IdempotencyKey is unique index on (LedgerID, IdempotencyKey).
 	IdempotencyKey string
 
 	// SourceDocumentReferenceID is reference to document which motivated JournalEntry (invoice, receipt number, etc.)
@@ -53,31 +58,56 @@ type JournalEntry struct {
 	Postings []Posting
 }
 
-// Validate validates JournalEntry against Ledger's functional currency (fc).
+// Validate validates JournalEntry against given Ledger.
 // JournalEntry is valid:
-// - functional currency (fc) is valid
-// - at least 2 Postings
-// - Postings sum to zero in their FunctionalAmount
-func (je JournalEntry) Validate(fc Currency) error {
-	if err := fc.Validate(); err != nil {
-		return fmt.Errorf("functional currency: %w", err)
+//   - JournalEntryID must not be zero value
+//   - ledger id must match
+//   - at least 2 Postings
+//   - all postings must be valid
+//   - Postings sum to zero in their FunctionalAmount
+//   - Reverses must be different than JournalEntryID
+//   - IdempotencyKey must not be empty
+//   - PostedOn must not be before OccurredAt
+func (je JournalEntry) Validate(l Ledger) error {
+	if je.JournalEntryID.IsZero() {
+		return fmt.Errorf("%w: journal entry id is zero", ErrInvalidJournalEntry)
+	}
+	if je.LedgerID != l.LedgerID {
+		return fmt.Errorf("%w: mismatched ledger ids %v and %v", ErrInvalidJournalEntry, je.LedgerID, l.LedgerID)
 	}
 	if len(je.Postings) < 2 {
-		return fmt.Errorf("%w: %d posting(s)", ErrNotEnoughPostings, len(je.Postings))
+		return fmt.Errorf("%w: at least 2 postings required, got %d", ErrInvalidJournalEntry, len(je.Postings))
 	}
 	ms := make([]Money, len(je.Postings))
 	for i, p := range je.Postings {
-		if p.FunctionalAmount.Currency != fc {
-			return fmt.Errorf("posting %d: %w: %q (posting) vs %q (functional)", i, ErrCurrencyMismatch, p.FunctionalAmount.Currency, fc)
+		if err := p.Validate(); err != nil {
+			return fmt.Errorf("%w: posting %d: %w", ErrInvalidJournalEntry, i, err)
+		}
+		if p.FunctionalAmount.Currency != l.FunctionalCurrency {
+			return fmt.Errorf("%w: posting %d: %w: %q (posting) vs %q (functional)", ErrInvalidJournalEntry, i, ErrCurrencyMismatch, p.FunctionalAmount.Currency, l.FunctionalCurrency)
 		}
 		ms[i] = p.FunctionalAmount
 	}
-	sum, err := SumMoney(fc, ms)
+	sum, err := SumMoney(l.FunctionalCurrency, ms)
 	if err != nil {
-		return fmt.Errorf("sum postings: %w", err)
+		return fmt.Errorf("%w: postings sum: %w", ErrInvalidJournalEntry, err)
 	}
 	if !sum.IsZero() {
-		return fmt.Errorf("%w: %v", ErrPostingsSumNotZero, sum)
+		return fmt.Errorf("%w: sum of postings functional amounts must be zero, got %v", ErrInvalidJournalEntry, sum)
+	}
+	if !je.Reverses.IsZero() && je.Reverses == je.JournalEntryID {
+		return fmt.Errorf("%w: reverse (%v) is same as journal entry (%v)", ErrInvalidJournalEntry, je.Reverses, je.JournalEntryID)
+	}
+	if je.IdempotencyKey == "" {
+		return fmt.Errorf("%w: idempotency key is required", ErrInvalidJournalEntry)
+	}
+	loc, err := l.ReportingTimeZone.Location()
+	if err != nil {
+		return fmt.Errorf("%w: ledger time zone: %w", ErrInvalidJournalEntry, err)
+	}
+	occurredOn := DateIn(je.OccurredAt, loc)
+	if je.PostedOn.Before(occurredOn) {
+		return fmt.Errorf("%w: posted on %v before occurred on %v", ErrInvalidJournalEntry, je.PostedOn, occurredOn)
 	}
 	return nil
 }

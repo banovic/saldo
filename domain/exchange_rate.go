@@ -1,9 +1,17 @@
 package domain
 
-import "time"
+import (
+	"time"
+	"uuid"
+)
 
-// ExchangeRateID is ID of certain ExchangeRate, it can be empty ("" is valid).
-type ExchangeRateID string
+// ExchangeRateID is identifier for single ExchangeRate.
+type ExchangeRateID struct{ uuid.UUID }
+
+// IsZero checks if exhange rate id is zero.
+func (erid ExchangeRateID) IsZero() bool {
+	return erid.UUID == uuid.Nil()
+}
 
 // ExchangeRateKind says what a rate is for. Different accounting
 // treatments require different rates for the same pair and date.
@@ -28,6 +36,7 @@ const (
 
 // ExchangeRate is exchange rate between currency pair at certain point in time
 // and from certain source.
+// Conversion must be deterministic - same inputs must produce same outputs always.
 // ExchangeRate is append only, no deletions nor updates, once it is created.
 // Exchange rate is saved as 2 integers representing: Num/Den.
 // For example: exchange rate 1 EUR = 117.8 RSD is stored as Num: 1178, Den: 10

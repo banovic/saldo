@@ -10,6 +10,7 @@ var (
 	ErrInvalidTimeZone = errors.New("invalid time zone")
 )
 
+// TimeZone is an IANA time zone identifier ("Europe/Belgrade", ...).
 type TimeZone string
 
 // NewTimeZone creates a new valid TimeZone.
@@ -23,19 +24,30 @@ func NewTimeZone(s string) (TimeZone, error) {
 }
 
 // Validate returns error if timezone is not valid.
+// Empty string ("") and "UTC" both resolve to "UTC" timezone.
+// Timezone is valid if:
+//   - not empty string; "" resolves to "UTC", but it represents zero for TimeZone, so forbidden here.
+//   - not string 'Local'; 'Local' is valid timezone on current system, it is not durable.
+//   - must exist in time zone database (as used by time.LoadLocation())
 func (tz TimeZone) Validate() error {
 	switch tz {
 	case "":
-		// time.LoadLocation resolves this as UTC, ie as valid.
 		return fmt.Errorf("%w: must not be empty", ErrInvalidTimeZone)
 	case "Local":
-		// Resolves to the host's zone, which is not a durable identity.
-		return fmt.Errorf("%w: must not be %q", ErrInvalidTimeZone, tz)
+		return fmt.Errorf("%w: resolved to host time zone and is not durable %q", ErrInvalidTimeZone, tz)
 	}
 
 	if _, err := time.LoadLocation(string(tz)); err != nil {
-		return fmt.Errorf("%w: %q", ErrInvalidTimeZone, tz)
+		return fmt.Errorf("%w: %q: %w", ErrInvalidTimeZone, tz, err)
 	}
 
 	return nil
+}
+
+// Location returns location for timezone.
+func (tz TimeZone) Location() (*time.Location, error) {
+	if err := tz.Validate(); err != nil {
+		return nil, err
+	}
+	return time.LoadLocation(string(tz))
 }

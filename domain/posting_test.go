@@ -4,34 +4,32 @@ import (
 	"errors"
 	"math"
 	"testing"
+	"uuid"
 )
 
 func TestPostingValidate(t *testing.T) {
-	eurRsd := ExchangeRate{ExchangeRateID: "r1", From: EUR, To: RSD, Num: 1178, Den: 10, Source: NBS, Kind: Spot}
+	rateID := ExchangeRateID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8eb0")}
 
 	testCases := []struct {
 		name    string
 		p       Posting
-		er      ExchangeRate
 		wantErr error
 	}{
 		{
-			name: "same currency, no rate",
+			name: "same currency, no rate id",
 			p:    Posting{TransactionAmount: Money{500, USD}, FunctionalAmount: Money{500, USD}},
 		},
 		{
-			name: "same currency, no rate, negative",
+			name: "same currency, no rate id, negative",
 			p:    Posting{TransactionAmount: Money{-500, USD}, FunctionalAmount: Money{-500, USD}},
 		},
 		{
-			name: "different currencies, rate set",
-			p:    Posting{TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{11780, RSD}},
-			er:   eurRsd,
+			name: "different currencies, rate id set",
+			p:    Posting{TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{11780, RSD}, ExchangeRateID: rateID},
 		},
 		{
-			name: "different currencies, rate set, negative",
-			p:    Posting{TransactionAmount: Money{-100, EUR}, FunctionalAmount: Money{-11780, RSD}},
-			er:   eurRsd,
+			name: "different currencies, rate id set, negative",
+			p:    Posting{TransactionAmount: Money{-100, EUR}, FunctionalAmount: Money{-11780, RSD}, ExchangeRateID: rateID},
 		},
 		{
 			name:    "invalid transaction currency",
@@ -50,20 +48,17 @@ func TestPostingValidate(t *testing.T) {
 		},
 		{
 			name:    "sign mismatch, positive transaction",
-			p:       Posting{TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{-11780, RSD}},
-			er:      eurRsd,
+			p:       Posting{TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{-11780, RSD}, ExchangeRateID: rateID},
 			wantErr: ErrInvalidPosting,
 		},
 		{
 			name:    "sign mismatch, negative transaction",
-			p:       Posting{TransactionAmount: Money{-100, EUR}, FunctionalAmount: Money{11780, RSD}},
-			er:      eurRsd,
+			p:       Posting{TransactionAmount: Money{-100, EUR}, FunctionalAmount: Money{11780, RSD}, ExchangeRateID: rateID},
 			wantErr: ErrInvalidPosting,
 		},
 		{
 			name:    "sign mismatch, zero functional",
-			p:       Posting{TransactionAmount: Money{1, EUR}, FunctionalAmount: Money{0, RSD}},
-			er:      eurRsd,
+			p:       Posting{TransactionAmount: Money{1, EUR}, FunctionalAmount: Money{0, RSD}, ExchangeRateID: rateID},
 			wantErr: ErrInvalidPosting,
 		},
 		{
@@ -72,36 +67,34 @@ func TestPostingValidate(t *testing.T) {
 			wantErr: ErrInvalidPosting,
 		},
 		{
-			name:    "different currencies, no rate",
+			name:    "different currencies, no rate id",
 			p:       Posting{TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{11780, RSD}},
 			wantErr: ErrInvalidPosting,
 		},
 		{
-			name:    "different currencies, same minor units, no rate",
+			name:    "different currencies, same minor units, no rate id",
 			p:       Posting{TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{100, USD}},
 			wantErr: ErrInvalidPosting,
 		},
 		{
-			name:    "same currency, rate set",
-			p:       Posting{TransactionAmount: Money{500, USD}, FunctionalAmount: Money{500, USD}},
-			er:      eurRsd,
+			name:    "same currency, rate id set",
+			p:       Posting{TransactionAmount: Money{500, USD}, FunctionalAmount: Money{500, USD}, ExchangeRateID: rateID},
 			wantErr: ErrInvalidPosting,
 		},
 		{
-			name:    "same currency, rate set, amounts differ",
-			p:       Posting{TransactionAmount: Money{500, USD}, FunctionalAmount: Money{501, USD}},
-			er:      eurRsd,
+			name:    "same currency, rate id set, amounts differ",
+			p:       Posting{TransactionAmount: Money{500, USD}, FunctionalAmount: Money{501, USD}, ExchangeRateID: rateID},
 			wantErr: ErrInvalidPosting,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.p.Validate(tc.er)
+			err := tc.p.Validate()
 			if !errors.Is(err, tc.wantErr) {
-				t.Fatalf("%+v.Validate(%+v) = %v, want %v", tc.p, tc.er, err, tc.wantErr)
+				t.Fatalf("%+v.Validate() = %v, want %v", tc.p, err, tc.wantErr)
 			}
 			if tc.wantErr != nil && !errors.Is(err, ErrInvalidPosting) {
-				t.Errorf("%+v.Validate(%+v) = %v, want %v", tc.p, tc.er, err, ErrInvalidPosting)
+				t.Errorf("%+v.Validate() = %v, want %v", tc.p, err, ErrInvalidPosting)
 			}
 		})
 	}
