@@ -59,6 +59,7 @@ type JournalEntry struct {
 }
 
 // Validate validates JournalEntry against given Ledger.
+// Ledger is assumed to be valid when passed in this method.
 // JournalEntry is valid:
 //   - JournalEntryID must not be zero value
 //   - ledger id must match

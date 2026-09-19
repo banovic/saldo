@@ -13,6 +13,11 @@ var (
 // PostingID identifies a posting.
 type PostingID struct{ uuid.UUID }
 
+// IsZero checks if posting id is zero.
+func (pid PostingID) IsZero() bool {
+	return pid.UUID == uuid.Nil()
+}
+
 // Posting is a line placed into an Account.
 type Posting struct {
 	PostingID      PostingID
@@ -40,7 +45,11 @@ func (p Posting) IsCredit() bool {
 }
 
 // Validate returns error if posting is not valid.
+// Exchange rate is assumed to be applied in app layer.
+// JournalEntryID is assumed to belong to valid JournalEntry.
+// AccountID is assumed to belong to valid Account.
 // Posting is valid if:
+//   - posting id is non-zero
 //   - transactional amount is valid
 //   - functional amount is valid
 //   - both amounts have same sign
@@ -48,6 +57,9 @@ func (p Posting) IsCredit() bool {
 //   - if exchange rate id is non-zero, the amounts are in different currencies
 //   - if the amounts have same currency, they are identical (same minor units)
 func (p Posting) Validate() error {
+	if p.PostingID.IsZero() {
+		return fmt.Errorf("%w: posting id is zero", ErrInvalidPosting)
+	}
 	if err := p.TransactionAmount.Validate(); err != nil {
 		return fmt.Errorf("%w: transactional amount: %w", ErrInvalidPosting, err)
 	}

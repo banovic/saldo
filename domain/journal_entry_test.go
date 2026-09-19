@@ -34,10 +34,11 @@ func TestJournalEntryValidate(t *testing.T) {
 		entryID       = JournalEntryID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ea0")}
 		otherEntryID  = JournalEntryID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ea1")}
 		rateID        = ExchangeRateID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8eb0")}
+		postingID     = PostingID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ec0")}
 	)
 
 	usd := func(n int64) Posting {
-		return Posting{TransactionAmount: Money{n, USD}, FunctionalAmount: Money{n, USD}}
+		return Posting{PostingID: postingID, TransactionAmount: Money{n, USD}, FunctionalAmount: Money{n, USD}}
 	}
 
 	// 2026-09-18 23:30 UTC is 2026-09-19 01:30 in Europe/Belgrade (UTC+2).
@@ -83,8 +84,8 @@ func TestJournalEntryValidate(t *testing.T) {
 			edit: func(je *JournalEntry, l *Ledger) {
 				l.FunctionalCurrency = JPY
 				je.Postings = []Posting{
-					{TransactionAmount: Money{5, JPY}, FunctionalAmount: Money{5, JPY}},
-					{TransactionAmount: Money{-5, JPY}, FunctionalAmount: Money{-5, JPY}},
+					{PostingID: postingID, TransactionAmount: Money{5, JPY}, FunctionalAmount: Money{5, JPY}},
+					{PostingID: postingID, TransactionAmount: Money{-5, JPY}, FunctionalAmount: Money{-5, JPY}},
 				}
 			},
 		},
@@ -95,8 +96,8 @@ func TestJournalEntryValidate(t *testing.T) {
 			edit: func(je *JournalEntry, l *Ledger) {
 				l.FunctionalCurrency = RSD
 				je.Postings = []Posting{
-					{TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{11780, RSD}, ExchangeRateID: rateID},
-					{TransactionAmount: Money{-7, JPY}, FunctionalAmount: Money{-11780, RSD}, ExchangeRateID: rateID},
+					{PostingID: postingID, TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{11780, RSD}, ExchangeRateID: rateID},
+					{PostingID: postingID, TransactionAmount: Money{-7, JPY}, FunctionalAmount: Money{-11780, RSD}, ExchangeRateID: rateID},
 				}
 			},
 		},
@@ -154,7 +155,7 @@ func TestJournalEntryValidate(t *testing.T) {
 		{
 			name: "posting not in functional currency",
 			edit: func(je *JournalEntry, l *Ledger) {
-				je.Postings[1] = Posting{TransactionAmount: Money{-500, EUR}, FunctionalAmount: Money{-500, EUR}}
+				je.Postings[1] = Posting{PostingID: postingID, TransactionAmount: Money{-500, EUR}, FunctionalAmount: Money{-500, EUR}}
 			},
 			wantErr: ErrCurrencyMismatch,
 		},

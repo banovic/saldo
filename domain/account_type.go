@@ -1,5 +1,14 @@
 package domain
 
+import (
+	"errors"
+	"fmt"
+)
+
+var (
+	ErrInvalidAccountType = errors.New("invalid account type")
+)
+
 // AccountType classifies an account by its role in the Accounting Equation:
 // Assets = Liabilities + Equity
 type AccountType string
@@ -13,13 +22,13 @@ const (
 	Expense   AccountType = "expense"
 )
 
-// IsValid checks if AccountType is valid.
+// Validate returns error if AccountType is not valid.
 // AccountType is valid:
-// - must be one of the five defined account types.
-func (at AccountType) IsValid() bool {
+//   - must be one of the five defined account types.
+func (at AccountType) Validate() error {
 	switch at {
 	case Asset, Liability, Equity, Revenue, Expense:
-		return true
+		return nil
 	}
-	return false
+	return fmt.Errorf("%w: %q", ErrInvalidAccountType, at)
 }
