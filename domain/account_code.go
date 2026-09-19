@@ -3,6 +3,14 @@ package domain
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"unicode"
+	"unicode/utf8"
+)
+
+const (
+	accountCodeMinLen = 3
+	accountCodeMaxLen = 100
 )
 
 var (
@@ -17,13 +25,28 @@ var (
 type AccountCode string
 
 // Validate returns error if account code is not valid.
+// TODO!!! - this will need more validation as things become more clearer about what accountants actually use.
 // Account code is valid if:
 //   - not empty / zero
 func (ac AccountCode) Validate() error {
-	if ac == "" {
-		return fmt.Errorf("%w: must not be empty", ErrInvalidAccountCode)
+	str := string(ac)
+	if str == "" {
+		return fmt.Errorf("%w: empty string", ErrInvalidAccountCode)
 	}
-	// TODO!!! - this will need more validation as things become more clearer
-	// about what accountants actually use.
+	if !utf8.ValidString(str) {
+		return fmt.Errorf("%w: invalid utf8", ErrInvalidAccountCode)
+	}
+	if str != strings.TrimSpace(str) {
+		return fmt.Errorf("%w: leading or trailing whitespace", ErrInvalidAccountCode)
+	}
+	rc := utf8.RuneCountInString(str)
+	if rc < accountCodeMinLen || rc > accountCodeMaxLen {
+		return fmt.Errorf("%w: min %d, max %d, got: %d", ErrInvalidAccountCode, accountCodeMinLen, accountCodeMaxLen, rc)
+	}
+	for _, r := range str {
+		if unicode.IsControl(r) {
+			return fmt.Errorf("%w: invalid char (control): %U", ErrInvalidAccountCode, r)
+		}
+	}
 	return nil
 }

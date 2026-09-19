@@ -50,8 +50,10 @@ func TestLedgerValidate(t *testing.T) {
 		{"invalid name", with(func(l *Ledger) { l.Name = "ab" }), ErrInvalidLedgerName},
 		{"invalid name wraps ErrInvalidLedger", with(func(l *Ledger) { l.Name = "ab" }), ErrInvalidLedger},
 		{"invalid functional currency", with(func(l *Ledger) { l.FunctionalCurrency = "XXX" }), ErrInvalidCurrency},
+		{"invalid functional currency wraps ErrInvalidLedger", with(func(l *Ledger) { l.FunctionalCurrency = "XXX" }), ErrInvalidLedger},
 		{"empty reporting time zone", with(func(l *Ledger) { l.ReportingTimeZone = "" }), ErrInvalidTimeZone},
 		{"unknown reporting time zone", with(func(l *Ledger) { l.ReportingTimeZone = "Europe/Nowhere" }), ErrInvalidTimeZone},
+		{"unknown reporting time zone wraps ErrInvalidLedger", with(func(l *Ledger) { l.ReportingTimeZone = "Europe/Nowhere" }), ErrInvalidLedger},
 		{"name is checked before currency", with(func(l *Ledger) {
 			l.Name = ""
 			l.FunctionalCurrency = "XXX"

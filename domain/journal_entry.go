@@ -68,6 +68,7 @@ type JournalEntry struct {
 //   - Postings sum to zero in their FunctionalAmount
 //   - Reverses must be different than JournalEntryID
 //   - IdempotencyKey must not be empty
+//   - PostedOn must be valid date
 //   - PostedOn must not be before OccurredAt
 func (je JournalEntry) Validate(l Ledger) error {
 	if je.JournalEntryID.IsZero() {
@@ -102,11 +103,17 @@ func (je JournalEntry) Validate(l Ledger) error {
 	if je.IdempotencyKey == "" {
 		return fmt.Errorf("%w: idempotency key is required", ErrInvalidJournalEntry)
 	}
+	if err := je.PostedOn.Validate(); err != nil {
+		return fmt.Errorf("%w: posted on: %w", ErrInvalidJournalEntry, err)
+	}
 	loc, err := l.ReportingTimeZone.Location()
 	if err != nil {
 		return fmt.Errorf("%w: ledger time zone: %w", ErrInvalidJournalEntry, err)
 	}
-	occurredOn := DateIn(je.OccurredAt, loc)
+	occurredOn, err := DateIn(je.OccurredAt, loc)
+	if err != nil {
+		return fmt.Errorf("%w: occurred on: %w", ErrInvalidJournalEntry, err)
+	}
 	if je.PostedOn.Before(occurredOn) {
 		return fmt.Errorf("%w: posted on %v before occurred on %v", ErrInvalidJournalEntry, je.PostedOn, occurredOn)
 	}

@@ -48,11 +48,11 @@ func (l Ledger) Validate() error {
 	}
 
 	if err := l.FunctionalCurrency.Validate(); err != nil {
-		return fmt.Errorf("functional currency: %w", err)
+		return fmt.Errorf("%w: functional currency: %w", ErrInvalidLedger, err)
 	}
 
 	if err := l.ReportingTimeZone.Validate(); err != nil {
-		return fmt.Errorf("reporting time zone: %w", err)
+		return fmt.Errorf("%w: reporting time zone: %w", ErrInvalidLedger, err)
 	}
 	return nil
 }

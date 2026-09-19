@@ -1,8 +1,13 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 	"time"
+)
+
+var (
+	ErrInvalidDate = errors.New("invalid date")
 )
 
 // Date represents date (year, month, day) without location nor timezone.
@@ -14,23 +19,40 @@ type Date struct {
 
 // NewDate constructs new date.
 func NewDate(y int, m time.Month, d int) (Date, error) {
-	if y < 1 || y > 9999 {
-		return Date{}, fmt.Errorf("year %d out of range [1, 9999]", y)
+	date := Date{Year: y, Month: m, Day: d}
+	if err := date.Validate(); err != nil {
+		return Date{}, err
 	}
-	if m < time.January || m > time.December {
-		return Date{}, fmt.Errorf("invalid month %d", int(m))
+	return date, nil
+}
+
+// Validate returns error if date is not valid.
+// Date is valid if:
+//   - year is between 1 and 9999 inclusive
+//   - month is 1..12 inclusive
+//   - day is valid for given year and month
+func (d Date) Validate() error {
+	if d.Year < 1 || d.Year > 9999 {
+		return fmt.Errorf("%w: year %d out of range [1, 9999]", ErrInvalidDate, d.Year)
 	}
-	t := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
-	if t.Year() != y || t.Month() != m || t.Day() != d {
-		return Date{}, fmt.Errorf("invalid date: %04d-%02d-%02d", y, int(m), d)
+	if d.Month < time.January || d.Month > time.December {
+		return fmt.Errorf("%w: invalid month %d", ErrInvalidDate, int(d.Month))
 	}
-	return Date{Year: y, Month: m, Day: d}, nil
+	t := time.Date(d.Year, d.Month, d.Day, 0, 0, 0, 0, time.UTC)
+	if t.Year() != d.Year || t.Month() != d.Month || t.Day() != d.Day {
+		return fmt.Errorf("%w: invalid date: %04d-%02d-%02d", ErrInvalidDate, d.Year, int(d.Month), d.Day)
+	}
+	return nil
 }
 
 // DateIn creates a new date which contains given time instant in given location.
-func DateIn(t time.Time, loc *time.Location) Date {
+func DateIn(t time.Time, loc *time.Location) (Date, error) {
 	y, m, d := t.In(loc).Date()
-	return Date{Year: y, Month: m, Day: d}
+	date, err := NewDate(y, m, d)
+	if err != nil {
+		return Date{}, err
+	}
+	return date, nil
 }
 
 // Before checks if a date was before given date.

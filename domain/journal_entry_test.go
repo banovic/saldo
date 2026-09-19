@@ -201,7 +201,12 @@ func TestJournalEntryValidate(t *testing.T) {
 		{
 			name:    "zero posted on",
 			edit:    func(je *JournalEntry, l *Ledger) { je.PostedOn = Date{} },
-			wantErr: ErrInvalidJournalEntry,
+			wantErr: ErrInvalidDate,
+		},
+		{
+			name:    "impossible posted on",
+			edit:    func(je *JournalEntry, l *Ledger) { je.PostedOn = Date{2026, time.February, 30} },
+			wantErr: ErrInvalidDate,
 		},
 	}
 	for _, tc := range testCases {

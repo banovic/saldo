@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"testing"
 	"time"
 )
@@ -20,6 +21,7 @@ func TestNewDate(t *testing.T) {
 
 		{"lowest supported date", 1, time.January, 1, Date{1, time.January, 1}, false},
 		{"highest supported date", 9999, time.December, 31, Date{9999, time.December, 31}, false},
+		{"zero value", 0, 0, 0, Date{}, true},
 		{"year zero", 0, time.January, 1, Date{}, true},
 		{"negative year", -1, time.January, 1, Date{}, true},
 		{"year past 9999", 10000, time.January, 1, Date{}, true},
@@ -47,6 +49,9 @@ func TestNewDate(t *testing.T) {
 			if (err != nil) != tc.wantErr {
 				t.Errorf("NewDate(%d, %d, %d) error = %v, want error %t", tc.y, tc.m, tc.d, err, tc.wantErr)
 			}
+			if tc.wantErr && !errors.Is(err, ErrInvalidDate) {
+				t.Errorf("NewDate(%d, %d, %d) error = %v, want %v", tc.y, tc.m, tc.d, err, ErrInvalidDate)
+			}
 			if got != tc.want {
 				t.Errorf("NewDate(%d, %d, %d) = %v, want %v", tc.y, tc.m, tc.d, got, tc.want)
 			}
@@ -69,24 +74,37 @@ func TestDateIn(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name string
-		t    time.Time
-		loc  *time.Location
-		want Date
+		name    string
+		t       time.Time
+		loc     *time.Location
+		want    Date
+		wantErr bool
 	}{
-		{"UTC", time.Date(2026, time.September, 18, 23, 30, 0, 0, time.UTC), time.UTC, Date{2026, time.September, 18}},
-		{"east of UTC, next day", time.Date(2026, time.September, 18, 23, 30, 0, 0, time.UTC), belgrade, Date{2026, time.September, 19}},
-		{"west of UTC, previous day", time.Date(2026, time.September, 19, 1, 0, 0, 0, time.UTC), newYork, Date{2026, time.September, 18}},
-		{"east of UTC, same day", time.Date(2026, time.September, 18, 12, 0, 0, 0, time.UTC), tokyo, Date{2026, time.September, 18}},
-		{"input location is ignored", time.Date(2026, time.September, 19, 1, 0, 0, 0, belgrade), time.UTC, Date{2026, time.September, 18}},
-		{"year boundary", time.Date(2026, time.December, 31, 23, 0, 0, 0, time.UTC), belgrade, Date{2027, time.January, 1}},
+		{"UTC", time.Date(2026, time.September, 18, 23, 30, 0, 0, time.UTC), time.UTC, Date{2026, time.September, 18}, false},
+		{"east of UTC, next day", time.Date(2026, time.September, 18, 23, 30, 0, 0, time.UTC), belgrade, Date{2026, time.September, 19}, false},
+		{"west of UTC, previous day", time.Date(2026, time.September, 19, 1, 0, 0, 0, time.UTC), newYork, Date{2026, time.September, 18}, false},
+		{"east of UTC, same day", time.Date(2026, time.September, 18, 12, 0, 0, 0, time.UTC), tokyo, Date{2026, time.September, 18}, false},
+		{"input location is ignored", time.Date(2026, time.September, 19, 1, 0, 0, 0, belgrade), time.UTC, Date{2026, time.September, 18}, false},
+		{"year boundary", time.Date(2026, time.December, 31, 23, 0, 0, 0, time.UTC), belgrade, Date{2027, time.January, 1}, false},
 		// Belgrade is UTC+1 in winter, UTC+2 in summer.
-		{"winter offset", time.Date(2026, time.January, 15, 23, 30, 0, 0, time.UTC), belgrade, Date{2026, time.January, 16}},
-		{"winter offset, before midnight", time.Date(2026, time.January, 15, 22, 30, 0, 0, time.UTC), belgrade, Date{2026, time.January, 15}},
+		{"winter offset", time.Date(2026, time.January, 15, 23, 30, 0, 0, time.UTC), belgrade, Date{2026, time.January, 16}, false},
+		{"winter offset, before midnight", time.Date(2026, time.January, 15, 22, 30, 0, 0, time.UTC), belgrade, Date{2026, time.January, 15}, false},
+
+		{"lowest supported date", time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), time.UTC, Date{1, time.January, 1}, false},
+		{"highest supported date", time.Date(9999, time.December, 31, 0, 0, 0, 0, time.UTC), time.UTC, Date{9999, time.December, 31}, false},
+		{"before year 1", time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), newYork, Date{}, true},
+		{"after year 9999", time.Date(9999, time.December, 31, 23, 0, 0, 0, time.UTC), belgrade, Date{}, true},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := DateIn(tc.t, tc.loc); got != tc.want {
+			got, err := DateIn(tc.t, tc.loc)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("DateIn(%v, %v) error = %v, want error %t", tc.t, tc.loc, err, tc.wantErr)
+			}
+			if tc.wantErr && !errors.Is(err, ErrInvalidDate) {
+				t.Errorf("DateIn(%v, %v) error = %v, want %v", tc.t, tc.loc, err, ErrInvalidDate)
+			}
+			if got != tc.want {
 				t.Errorf("DateIn(%v, %v) = %v, want %v", tc.t, tc.loc, got, tc.want)
 			}
 		})

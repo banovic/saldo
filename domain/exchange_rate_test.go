@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"testing"
 	"time"
 	"uuid"
@@ -25,24 +26,50 @@ func TestExchangeRateIDIsZero(t *testing.T) {
 	}
 }
 
-func TestExchangeRateIsZero(t *testing.T) {
-	rateID := ExchangeRateID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8eb0")}
+func TestExchangeRateValidate(t *testing.T) {
+	valid := ExchangeRate{
+		ExchangeRateID: ExchangeRateID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8eb0")},
+		From:           EUR,
+		To:             RSD,
+		Num:            11780,
+		Den:            100,
+		On:             Date{2026, time.September, 18},
+	}
+	with := func(f func(*ExchangeRate)) ExchangeRate {
+		er := valid
+		f(&er)
+		return er
+	}
 
 	testCases := []struct {
-		name string
-		er   ExchangeRate
-		want bool
+		name    string
+		rate    ExchangeRate
+		wantErr error
 	}{
-		{"zero value", ExchangeRate{}, true},
-		{"only ID set", ExchangeRate{ExchangeRateID: rateID}, false},
-		{"only Num set", ExchangeRate{Num: 1}, false},
-		{"only On set", ExchangeRate{On: time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)}, false},
-		{"fully set", ExchangeRate{ExchangeRateID: rateID, From: EUR, To: RSD, Num: 1178, Den: 10, Source: NBS, Kind: Spot}, false},
+		{"valid", valid, nil},
+		{"rate of one", with(func(er *ExchangeRate) { er.Num, er.Den = 1, 1 }), nil},
+
+		{"zero exchange rate id", with(func(er *ExchangeRate) { er.ExchangeRateID = ExchangeRateID{} }), ErrInvalidExchangeRate},
+		{"empty from currency", with(func(er *ExchangeRate) { er.From = "" }), ErrInvalidCurrency},
+		{"unknown from currency", with(func(er *ExchangeRate) { er.From = "XXX" }), ErrInvalidCurrency},
+		{"empty to currency", with(func(er *ExchangeRate) { er.To = "" }), ErrInvalidCurrency},
+		{"unknown to currency", with(func(er *ExchangeRate) { er.To = "XXX" }), ErrInvalidCurrency},
+		{"same currencies", with(func(er *ExchangeRate) { er.To = er.From }), ErrInvalidExchangeRate},
+		{"zero numerator", with(func(er *ExchangeRate) { er.Num = 0 }), ErrInvalidExchangeRate},
+		{"negative numerator", with(func(er *ExchangeRate) { er.Num = -1 }), ErrInvalidExchangeRate},
+		{"zero denominator", with(func(er *ExchangeRate) { er.Den = 0 }), ErrInvalidExchangeRate},
+		{"negative denominator", with(func(er *ExchangeRate) { er.Den = -1 }), ErrInvalidExchangeRate},
+		{"zero on date", with(func(er *ExchangeRate) { er.On = Date{} }), ErrInvalidDate},
+		{"impossible on date", with(func(er *ExchangeRate) { er.On = Date{2026, time.February, 30} }), ErrInvalidDate},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := tc.er.IsZero(); got != tc.want {
-				t.Errorf("%+v.IsZero() = %t, want %t", tc.er, got, tc.want)
+			err := tc.rate.Validate()
+			if !errors.Is(err, tc.wantErr) {
+				t.Fatalf("%+v.Validate() = %v, want %v", tc.rate, err, tc.wantErr)
+			}
+			if tc.wantErr != nil && !errors.Is(err, ErrInvalidExchangeRate) {
+				t.Errorf("%+v.Validate() = %v, want %v", tc.rate, err, ErrInvalidExchangeRate)
 			}
 		})
 	}
