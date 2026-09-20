@@ -48,11 +48,7 @@ func (d Date) Validate() error {
 // DateIn creates a new date which contains given time instant in given location.
 func DateIn(t time.Time, loc *time.Location) (Date, error) {
 	y, m, d := t.In(loc).Date()
-	date, err := NewDate(y, m, d)
-	if err != nil {
-		return Date{}, err
-	}
-	return date, nil
+	return NewDate(y, m, d)
 }
 
 // Before checks if a date was before given date.
