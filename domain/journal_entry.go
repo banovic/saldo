@@ -93,7 +93,7 @@ func (je JournalEntry) Validate(l Ledger) error {
 		}
 		ms[i] = p.FunctionalAmount
 	}
-	sum, err := SumMoney(l.FunctionalCurrency, ms)
+	sum, err := Sum(l.FunctionalCurrency, ms)
 	if err != nil {
 		return fmt.Errorf("%w: postings sum: %w", ErrInvalidJournalEntry, err)
 	}

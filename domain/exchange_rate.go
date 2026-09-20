@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	ErrInvalidExchangeRate = errors.New("invalid exchange rate")
+	ErrInvalidExchangeRate        = errors.New("invalid exchange rate")
+	ErrInvalidExchangeRateConvert = errors.New("invalid exchange rate conversion")
 )
 
 // ExchangeRateID is identifier for single ExchangeRate.
@@ -67,4 +68,21 @@ func (er ExchangeRate) Validate() error {
 		return fmt.Errorf("%w: on: %w", ErrInvalidExchangeRate, err)
 	}
 	return nil
+}
+
+// Convert Money into new Money for given currency using exchange rate.
+// ExchangeRate instance is assumed to be valid when calling this method.
+func (er ExchangeRate) Convert(m Money) (Money, error) {
+	if er.From != m.Currency {
+		return Money{}, fmt.Errorf("%w: from currency %q does not match money currency %q", ErrCurrencyMismatch, er.From, m.Currency)
+	}
+	num, err := mul(er.Num, m.MinorUnits)
+	if err != nil {
+		return Money{}, fmt.Errorf("%w: %w", ErrInvalidExchangeRateConvert, err)
+	}
+	convertedUnits, err := divAndRoundHalfUp(num, er.Den)
+	if err != nil {
+		return Money{}, fmt.Errorf("%w: %w", ErrInvalidExchangeRateConvert, err)
+	}
+	return Money{MinorUnits: convertedUnits, Currency: er.To}, nil
 }

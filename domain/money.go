@@ -3,12 +3,11 @@ package domain
 import (
 	"errors"
 	"fmt"
-	"math/big"
 )
 
 var (
 	ErrCurrencyMismatch = errors.New("currency mismatch")
-	ErrOverflow         = errors.New("overflow")
+	ErrInvalidMoney     = errors.New("invalid money")
 )
 
 // Money represents amount of money in some currency.
@@ -65,33 +64,31 @@ func (m Money) String() string {
 }
 
 // Mul multiplies money by given factor k.
+// Money instance is assumed to be valid when calling this method.
 func (m Money) Mul(k int64) (Money, error) {
-	if err := m.Validate(); err != nil {
-		return Money{}, err
+	newUnits, err := mul(m.MinorUnits, k)
+	if err != nil {
+		return Money{}, fmt.Errorf("%w: %w", ErrInvalidMoney, err)
 	}
-	mul := new(big.Int).Mul(big.NewInt(k), big.NewInt(m.MinorUnits))
-	if !mul.IsInt64() {
-		return Money{}, fmt.Errorf("%w: %v cannot be represented by int64", ErrOverflow, mul)
-	}
-	return Money{MinorUnits: mul.Int64(), Currency: m.Currency}, nil
+	return Money{MinorUnits: newUnits, Currency: m.Currency}, nil
 }
 
-// SumMoney sums all the monies in ms.
+// Sum sums all the monies in ms.
 // All monies must be in the same currency c.
 // If ms is empty, a valid zero money in currency c is returned.
-func SumMoney(c Currency, ms []Money) (Money, error) {
-	if err := c.Validate(); err != nil {
-		return Money{}, err
-	}
-	sum := big.NewInt(0)
+// Money instances are assumed to be valid when calling this method.
+// Currency c is assumed to be valid when calling this method.
+func Sum(c Currency, ms []Money) (Money, error) {
+	monies := make([]int64, 0, len(ms))
 	for _, m := range ms {
 		if m.Currency != c {
 			return Money{}, fmt.Errorf("%w: %q in a sum of %q", ErrCurrencyMismatch, m.Currency, c)
 		}
-		sum.Add(sum, big.NewInt(m.MinorUnits))
+		monies = append(monies, m.MinorUnits)
 	}
-	if !sum.IsInt64() {
-		return Money{}, fmt.Errorf("%w: %v cannot be represented by int64", ErrOverflow, sum)
+	moniesSum, err := add(monies...)
+	if err != nil {
+		return Money{}, fmt.Errorf("%w: %w", ErrInvalidMoney, err)
 	}
-	return Money{Currency: c, MinorUnits: sum.Int64()}, nil
+	return Money{MinorUnits: moniesSum, Currency: c}, nil
 }
