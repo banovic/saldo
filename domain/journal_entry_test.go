@@ -38,7 +38,7 @@ func TestJournalEntryValidate(t *testing.T) {
 	)
 
 	usd := func(n int64) Posting {
-		return Posting{PostingID: postingID, TransactionAmount: Money{n, USD}, FunctionalAmount: Money{n, USD}}
+		return Posting{PostingID: postingID, JournalEntryID: entryID, TransactionAmount: Money{n, USD}, FunctionalAmount: Money{n, USD}}
 	}
 
 	// 2026-09-18 23:30 UTC is 2026-09-19 01:30 in Europe/Belgrade (UTC+2).
@@ -84,8 +84,8 @@ func TestJournalEntryValidate(t *testing.T) {
 			edit: func(je *JournalEntry, l *Ledger) {
 				l.FunctionalCurrency = JPY
 				je.Postings = []Posting{
-					{PostingID: postingID, TransactionAmount: Money{5, JPY}, FunctionalAmount: Money{5, JPY}},
-					{PostingID: postingID, TransactionAmount: Money{-5, JPY}, FunctionalAmount: Money{-5, JPY}},
+					{PostingID: postingID, JournalEntryID: entryID, TransactionAmount: Money{5, JPY}, FunctionalAmount: Money{5, JPY}},
+					{PostingID: postingID, JournalEntryID: entryID, TransactionAmount: Money{-5, JPY}, FunctionalAmount: Money{-5, JPY}},
 				}
 			},
 		},
@@ -96,8 +96,8 @@ func TestJournalEntryValidate(t *testing.T) {
 			edit: func(je *JournalEntry, l *Ledger) {
 				l.FunctionalCurrency = RSD
 				je.Postings = []Posting{
-					{PostingID: postingID, TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{11780, RSD}, ExchangeRateID: rateID},
-					{PostingID: postingID, TransactionAmount: Money{-7, JPY}, FunctionalAmount: Money{-11780, RSD}, ExchangeRateID: rateID},
+					{PostingID: postingID, JournalEntryID: entryID, TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{11780, RSD}, ExchangeRateID: rateID},
+					{PostingID: postingID, JournalEntryID: entryID, TransactionAmount: Money{-7, JPY}, FunctionalAmount: Money{-11780, RSD}, ExchangeRateID: rateID},
 				}
 			},
 		},
@@ -146,6 +146,16 @@ func TestJournalEntryValidate(t *testing.T) {
 			wantErr: ErrInvalidJournalEntry,
 		},
 		{
+			name:    "posting belongs to another journal entry",
+			edit:    func(je *JournalEntry, l *Ledger) { je.Postings[1].JournalEntryID = otherEntryID },
+			wantErr: ErrInvalidJournalEntry,
+		},
+		{
+			name:    "posting without journal entry id",
+			edit:    func(je *JournalEntry, l *Ledger) { je.Postings[1].JournalEntryID = JournalEntryID{} },
+			wantErr: ErrInvalidJournalEntry,
+		},
+		{
 			name: "invalid posting",
 			edit: func(je *JournalEntry, l *Ledger) {
 				je.Postings[0].TransactionAmount = Money{501, USD}
@@ -155,7 +165,7 @@ func TestJournalEntryValidate(t *testing.T) {
 		{
 			name: "posting not in functional currency",
 			edit: func(je *JournalEntry, l *Ledger) {
-				je.Postings[1] = Posting{PostingID: postingID, TransactionAmount: Money{-500, EUR}, FunctionalAmount: Money{-500, EUR}}
+				je.Postings[1] = Posting{PostingID: postingID, JournalEntryID: entryID, TransactionAmount: Money{-500, EUR}, FunctionalAmount: Money{-500, EUR}}
 			},
 			wantErr: ErrCurrencyMismatch,
 		},
@@ -184,7 +194,12 @@ func TestJournalEntryValidate(t *testing.T) {
 		{
 			name:    "empty idempotency key",
 			edit:    func(je *JournalEntry, l *Ledger) { je.IdempotencyKey = "" },
-			wantErr: ErrInvalidJournalEntry,
+			wantErr: ErrInvalidIdempotencyKey,
+		},
+		{
+			name:    "invalid idempotency key",
+			edit:    func(je *JournalEntry, l *Ledger) { je.IdempotencyKey = "key 1" },
+			wantErr: ErrInvalidIdempotencyKey,
 		},
 		{
 			name:    "invalid ledger time zone",

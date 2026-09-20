@@ -34,7 +34,7 @@ type JournalEntry struct {
 	// IdempotencyKey is supplied by the client for each JournalEntry client wants to record.
 	// It is used to guarantee that the JournalEntry is written exactly once per ledger.
 	// In database view IdempotencyKey is unique index on (LedgerID, IdempotencyKey).
-	IdempotencyKey string
+	IdempotencyKey IdempotencyKey
 
 	// SourceDocumentReferenceID is reference to document which motivated JournalEntry (invoice, receipt number, etc.)
 	SourceDocumentReferenceID string
@@ -67,7 +67,7 @@ type JournalEntry struct {
 //   - all postings must be valid
 //   - Postings sum to zero in their FunctionalAmount
 //   - Reverses must be different than JournalEntryID
-//   - IdempotencyKey must not be empty
+//   - IdempotencyKey must be valid
 //   - PostedOn must be valid date
 //   - PostedOn must not be before OccurredAt
 func (je JournalEntry) Validate(l Ledger) error {
@@ -103,8 +103,8 @@ func (je JournalEntry) Validate(l Ledger) error {
 	if !je.Reverses.IsZero() && je.Reverses == je.JournalEntryID {
 		return fmt.Errorf("%w: reverse (%v) is same as journal entry (%v)", ErrInvalidJournalEntry, je.Reverses, je.JournalEntryID)
 	}
-	if je.IdempotencyKey == "" {
-		return fmt.Errorf("%w: idempotency key is required", ErrInvalidJournalEntry)
+	if err := je.IdempotencyKey.Validate(); err != nil {
+		return fmt.Errorf("%w: idempotency key: %w", ErrInvalidJournalEntry, err)
 	}
 	if err := je.PostedOn.Validate(); err != nil {
 		return fmt.Errorf("%w: posted on: %w", ErrInvalidJournalEntry, err)
