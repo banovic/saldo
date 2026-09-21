@@ -36,9 +36,6 @@ type JournalEntry struct {
 	// In database view IdempotencyKey is unique index on (LedgerID, IdempotencyKey).
 	IdempotencyKey IdempotencyKey
 
-	// SourceDocumentReferenceID is reference to document which motivated JournalEntry (invoice, receipt number, etc.)
-	SourceDocumentReferenceID string
-
 	// When event happened in the world. Stored as UTC timestamp.
 	OccurredAt time.Time
 
