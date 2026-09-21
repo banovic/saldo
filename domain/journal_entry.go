@@ -46,7 +46,7 @@ type JournalEntry struct {
 	RecordedAt time.Time
 
 	// Description is natural text describing JournalEntry.
-	Description string
+	Description JournalEntryDescription
 
 	// Set when this JournalEntry reverses another JournalEntry, or empty otherwise.
 	Reverses JournalEntryID
@@ -65,6 +65,7 @@ type JournalEntry struct {
 //   - Postings sum to zero in their FunctionalAmount
 //   - Reverses must be different than JournalEntryID
 //   - IdempotencyKey must be valid
+//   - Description must be valid
 //   - PostedOn must be valid date
 //   - PostedOn must not be before OccurredAt
 func (je JournalEntry) Validate(l Ledger) error {
@@ -102,6 +103,9 @@ func (je JournalEntry) Validate(l Ledger) error {
 	}
 	if err := je.IdempotencyKey.Validate(); err != nil {
 		return fmt.Errorf("%w: idempotency key: %w", ErrInvalidJournalEntry, err)
+	}
+	if err := je.Description.Validate(); err != nil {
+		return fmt.Errorf("%w: description: %w", ErrInvalidJournalEntry, err)
 	}
 	if err := je.PostedOn.Validate(); err != nil {
 		return fmt.Errorf("%w: posted on: %w", ErrInvalidJournalEntry, err)

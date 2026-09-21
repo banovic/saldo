@@ -58,6 +58,7 @@ func TestJournalEntryValidate(t *testing.T) {
 			JournalEntryID: entryID,
 			LedgerID:       ledgerID,
 			IdempotencyKey: "key-1",
+			Description:    "Office rent",
 			OccurredAt:     occurredAt,
 			PostedOn:       Date{2026, time.September, 19},
 			Postings:       []Posting{usd(500), usd(-500)},
@@ -200,6 +201,11 @@ func TestJournalEntryValidate(t *testing.T) {
 			name:    "invalid idempotency key",
 			edit:    func(je *JournalEntry, l *Ledger) { je.IdempotencyKey = "key 1" },
 			wantErr: ErrInvalidIdempotencyKey,
+		},
+		{
+			name:    "empty description",
+			edit:    func(je *JournalEntry, l *Ledger) { je.Description = "" },
+			wantErr: ErrInvalidJournalEntryDescription,
 		},
 		{
 			name:    "invalid ledger time zone",
