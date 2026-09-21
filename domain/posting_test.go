@@ -29,6 +29,8 @@ func TestPostingIDIsZero(t *testing.T) {
 func TestPostingValidate(t *testing.T) {
 	rateID := ExchangeRateID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8eb0")}
 	postingID := PostingID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ec0")}
+	entryID := JournalEntryID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ea0")}
+	accountID := AccountID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ed0")}
 
 	testCases := []struct {
 		name    string
@@ -37,78 +39,88 @@ func TestPostingValidate(t *testing.T) {
 	}{
 		{
 			name: "same currency, no rate id",
-			p:    Posting{PostingID: postingID, TransactionAmount: Money{500, USD}, FunctionalAmount: Money{500, USD}},
+			p:    Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{500, USD}, FunctionalAmount: Money{500, USD}},
 		},
 		{
 			name: "same currency, no rate id, negative",
-			p:    Posting{PostingID: postingID, TransactionAmount: Money{-500, USD}, FunctionalAmount: Money{-500, USD}},
+			p:    Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{-500, USD}, FunctionalAmount: Money{-500, USD}},
 		},
 		{
 			name: "different currencies, rate id set",
-			p:    Posting{PostingID: postingID, TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{11780, RSD}, ExchangeRateID: rateID},
+			p:    Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{11780, RSD}, ExchangeRateID: rateID},
 		},
 		{
 			name: "different currencies, rate id set, negative",
-			p:    Posting{PostingID: postingID, TransactionAmount: Money{-100, EUR}, FunctionalAmount: Money{-11780, RSD}, ExchangeRateID: rateID},
+			p:    Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{-100, EUR}, FunctionalAmount: Money{-11780, RSD}, ExchangeRateID: rateID},
 		},
 		{
 			name:    "zero posting id",
-			p:       Posting{TransactionAmount: Money{500, USD}, FunctionalAmount: Money{500, USD}},
+			p:       Posting{JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{500, USD}, FunctionalAmount: Money{500, USD}},
+			wantErr: ErrInvalidPosting,
+		},
+		{
+			name:    "zero journal entry id",
+			p:       Posting{PostingID: postingID, AccountID: accountID, TransactionAmount: Money{500, USD}, FunctionalAmount: Money{500, USD}},
+			wantErr: ErrInvalidPosting,
+		},
+		{
+			name:    "zero account id",
+			p:       Posting{PostingID: postingID, JournalEntryID: entryID, TransactionAmount: Money{500, USD}, FunctionalAmount: Money{500, USD}},
 			wantErr: ErrInvalidPosting,
 		},
 		{
 			name:    "invalid transaction currency",
-			p:       Posting{PostingID: postingID, TransactionAmount: Money{500, "XXX"}, FunctionalAmount: Money{500, USD}},
+			p:       Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{500, "XXX"}, FunctionalAmount: Money{500, USD}},
 			wantErr: ErrInvalidCurrency,
 		},
 		{
 			name:    "zero value transaction amount",
-			p:       Posting{PostingID: postingID, FunctionalAmount: Money{500, USD}},
+			p:       Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, FunctionalAmount: Money{500, USD}},
 			wantErr: ErrInvalidCurrency,
 		},
 		{
 			name:    "invalid functional currency",
-			p:       Posting{PostingID: postingID, TransactionAmount: Money{500, USD}, FunctionalAmount: Money{500, "XXX"}},
+			p:       Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{500, USD}, FunctionalAmount: Money{500, "XXX"}},
 			wantErr: ErrInvalidCurrency,
 		},
 		{
 			name:    "sign mismatch, positive transaction",
-			p:       Posting{PostingID: postingID, TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{-11780, RSD}, ExchangeRateID: rateID},
+			p:       Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{-11780, RSD}, ExchangeRateID: rateID},
 			wantErr: ErrInvalidPosting,
 		},
 		{
 			name:    "sign mismatch, negative transaction",
-			p:       Posting{PostingID: postingID, TransactionAmount: Money{-100, EUR}, FunctionalAmount: Money{11780, RSD}, ExchangeRateID: rateID},
+			p:       Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{-100, EUR}, FunctionalAmount: Money{11780, RSD}, ExchangeRateID: rateID},
 			wantErr: ErrInvalidPosting,
 		},
 		{
 			name:    "sign mismatch, zero functional",
-			p:       Posting{PostingID: postingID, TransactionAmount: Money{1, EUR}, FunctionalAmount: Money{0, RSD}, ExchangeRateID: rateID},
+			p:       Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{1, EUR}, FunctionalAmount: Money{0, RSD}, ExchangeRateID: rateID},
 			wantErr: ErrInvalidPosting,
 		},
 		{
 			name:    "same currency, no rate, amounts differ",
-			p:       Posting{PostingID: postingID, TransactionAmount: Money{500, USD}, FunctionalAmount: Money{501, USD}},
+			p:       Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{500, USD}, FunctionalAmount: Money{501, USD}},
 			wantErr: ErrInvalidPosting,
 		},
 		{
 			name:    "different currencies, no rate id",
-			p:       Posting{PostingID: postingID, TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{11780, RSD}},
+			p:       Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{11780, RSD}},
 			wantErr: ErrInvalidPosting,
 		},
 		{
 			name:    "different currencies, same minor units, no rate id",
-			p:       Posting{PostingID: postingID, TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{100, USD}},
+			p:       Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{100, USD}},
 			wantErr: ErrInvalidPosting,
 		},
 		{
 			name:    "same currency, rate id set",
-			p:       Posting{PostingID: postingID, TransactionAmount: Money{500, USD}, FunctionalAmount: Money{500, USD}, ExchangeRateID: rateID},
+			p:       Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{500, USD}, FunctionalAmount: Money{500, USD}, ExchangeRateID: rateID},
 			wantErr: ErrInvalidPosting,
 		},
 		{
 			name:    "same currency, rate id set, amounts differ",
-			p:       Posting{PostingID: postingID, TransactionAmount: Money{500, USD}, FunctionalAmount: Money{501, USD}, ExchangeRateID: rateID},
+			p:       Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{500, USD}, FunctionalAmount: Money{501, USD}, ExchangeRateID: rateID},
 			wantErr: ErrInvalidPosting,
 		},
 	}

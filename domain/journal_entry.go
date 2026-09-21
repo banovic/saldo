@@ -62,6 +62,7 @@ type JournalEntry struct {
 //   - ledger id must match
 //   - at least 2 Postings
 //   - all postings must be valid
+//   - all postings must have different PostingID
 //   - Postings sum to zero in their FunctionalAmount
 //   - Reverses must be different than JournalEntryID
 //   - IdempotencyKey must be valid
@@ -79,6 +80,7 @@ func (je JournalEntry) Validate(l Ledger) error {
 		return fmt.Errorf("%w: at least 2 postings required, got %d", ErrInvalidJournalEntry, len(je.Postings))
 	}
 	ms := make([]Money, len(je.Postings))
+	postingIds := make(map[PostingID]struct{}, len(je.Postings))
 	for i, p := range je.Postings {
 		if je.JournalEntryID != p.JournalEntryID {
 			return fmt.Errorf("%w: posting %d: journal entry id %v and posting's journal entry id %v do not match", ErrInvalidJournalEntry, i, je.JournalEntryID, p.JournalEntryID)
@@ -90,6 +92,10 @@ func (je JournalEntry) Validate(l Ledger) error {
 			return fmt.Errorf("%w: posting %d: %w: %q (posting) vs %q (functional)", ErrInvalidJournalEntry, i, ErrCurrencyMismatch, p.FunctionalAmount.Currency, l.FunctionalCurrency)
 		}
 		ms[i] = p.FunctionalAmount
+		postingIds[p.PostingID] = struct{}{}
+	}
+	if len(postingIds) != len(je.Postings) {
+		return fmt.Errorf("%w: all postingid's must be unique", ErrInvalidJournalEntry)
 	}
 	sum, err := Sum(l.FunctionalCurrency, ms)
 	if err != nil {

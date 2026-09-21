@@ -40,7 +40,7 @@ Layering is specified in [doc.go](doc.go) — read it before structural changes.
 - `JournalEntry`: ≥2 postings, `FunctionalAmount`s sum to zero in ledger's functional currency.
   Immutable — corrections are new entries with `Reverses` set. `IdempotencyKey` for exactly-once.
 - Posting carries `TransactionAmount` (original currency) and `FunctionalAmount` (booked) + `ExchangeRateID`.
-- `ExchangeRate` is append-only, stored as `Num/Den` integers, with `Kind` and `Source`.
+- `ExchangeRate` is append-only, stored as `Num/Den` integers.
 - Account has no stored balance; balance = sum of its postings' functional amounts.
 
 ## Conventions

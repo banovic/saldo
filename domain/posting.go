@@ -45,11 +45,14 @@ func (p Posting) IsCredit() bool {
 }
 
 // Validate returns error if posting is not valid.
+// Posting with FunctionalAmount (or TransactionAmount) of zero is valid.
 // Exchange rate is assumed to be applied in app layer.
 // JournalEntryID is assumed to belong to valid JournalEntry.
 // AccountID is assumed to belong to valid Account.
 // Posting is valid if:
 //   - posting id is non-zero
+//   - journal entry id is non-zero
+//   - account id is non-zero
 //   - transactional amount is valid
 //   - functional amount is valid
 //   - both amounts have same sign
@@ -59,6 +62,12 @@ func (p Posting) IsCredit() bool {
 func (p Posting) Validate() error {
 	if p.PostingID.IsZero() {
 		return fmt.Errorf("%w: posting id is zero", ErrInvalidPosting)
+	}
+	if p.JournalEntryID.IsZero() {
+		return fmt.Errorf("%w: journal entry id is zero", ErrInvalidPosting)
+	}
+	if p.AccountID.IsZero() {
+		return fmt.Errorf("%w: account id is zero", ErrInvalidPosting)
 	}
 	if err := p.TransactionAmount.Validate(); err != nil {
 		return fmt.Errorf("%w: transactional amount: %w", ErrInvalidPosting, err)

@@ -72,6 +72,7 @@ func (er ExchangeRate) Validate() error {
 
 // Convert Money into new Money for given currency using exchange rate.
 // ExchangeRate instance is assumed to be valid when calling this method.
+// TODO!!! - mul() + divAndRoundHalfUp() - should be 1 atomic operation, it can prevent some overflow
 func (er ExchangeRate) Convert(m Money) (Money, error) {
 	if er.From != m.Currency {
 		return Money{}, fmt.Errorf("%w: from currency %q does not match money currency %q", ErrCurrencyMismatch, er.From, m.Currency)
