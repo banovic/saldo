@@ -3,9 +3,6 @@ package domain
 import (
 	"errors"
 	"fmt"
-	"strings"
-	"unicode"
-	"unicode/utf8"
 )
 
 const (
@@ -36,24 +33,8 @@ func NewLedgerName(str string) (LedgerName, error) {
 //   - between configured length bounds
 //   - contains no control characters
 func (ln LedgerName) Validate() error {
-	str := string(ln)
-	if str == "" {
-		return fmt.Errorf("%w: empty string", ErrInvalidLedgerName)
-	}
-	if !utf8.ValidString(str) {
-		return fmt.Errorf("%w: invalid utf8", ErrInvalidLedgerName)
-	}
-	if str != strings.TrimSpace(str) {
-		return fmt.Errorf("%w: leading or trailing whitespace", ErrInvalidLedgerName)
-	}
-	rc := utf8.RuneCountInString(str)
-	if rc < ledgerNameMinLen || rc > ledgerNameMaxLen {
-		return fmt.Errorf("%w: min %d, max %d, got: %d", ErrInvalidLedgerName, ledgerNameMinLen, ledgerNameMaxLen, rc)
-	}
-	for _, r := range str {
-		if unicode.IsControl(r) {
-			return fmt.Errorf("%w: invalid char (control): %U", ErrInvalidLedgerName, r)
-		}
+	if err := validateText(string(ln), ledgerNameMinLen, ledgerNameMaxLen); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidLedgerName, err)
 	}
 	return nil
 }

@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -34,12 +35,18 @@ func TestJournalEntryValidate(t *testing.T) {
 		entryID       = JournalEntryID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ea0")}
 		otherEntryID  = JournalEntryID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ea1")}
 		rateID        = ExchangeRateID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8eb0")}
-		postingID     = PostingID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ec0")}
 		accountID     = AccountID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ed0")}
 	)
 
+	// Postings of an entry must have different ids, so hand out a fresh one per call.
+	next := 0
+	postingID := func() PostingID {
+		next++
+		return PostingID{uuid.MustParse(fmt.Sprintf("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8%03d", next))}
+	}
+
 	usd := func(n int64) Posting {
-		return Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{n, USD}, FunctionalAmount: Money{n, USD}}
+		return Posting{PostingID: postingID(), JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{n, USD}, FunctionalAmount: Money{n, USD}}
 	}
 
 	// 2026-09-18 23:30 UTC is 2026-09-19 01:30 in Europe/Belgrade (UTC+2).
@@ -86,8 +93,8 @@ func TestJournalEntryValidate(t *testing.T) {
 			edit: func(je *JournalEntry, l *Ledger) {
 				l.FunctionalCurrency = JPY
 				je.Postings = []Posting{
-					{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{5, JPY}, FunctionalAmount: Money{5, JPY}},
-					{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{-5, JPY}, FunctionalAmount: Money{-5, JPY}},
+					{PostingID: postingID(), JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{5, JPY}, FunctionalAmount: Money{5, JPY}},
+					{PostingID: postingID(), JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{-5, JPY}, FunctionalAmount: Money{-5, JPY}},
 				}
 			},
 		},
@@ -98,8 +105,8 @@ func TestJournalEntryValidate(t *testing.T) {
 			edit: func(je *JournalEntry, l *Ledger) {
 				l.FunctionalCurrency = RSD
 				je.Postings = []Posting{
-					{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{11780, RSD}, ExchangeRateID: rateID},
-					{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{-7, JPY}, FunctionalAmount: Money{-11780, RSD}, ExchangeRateID: rateID},
+					{PostingID: postingID(), JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{100, EUR}, FunctionalAmount: Money{11780, RSD}, ExchangeRateID: rateID},
+					{PostingID: postingID(), JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{-7, JPY}, FunctionalAmount: Money{-11780, RSD}, ExchangeRateID: rateID},
 				}
 			},
 		},
@@ -163,6 +170,11 @@ func TestJournalEntryValidate(t *testing.T) {
 			wantErr: ErrInvalidPosting,
 		},
 		{
+			name:    "duplicate posting ids",
+			edit:    func(je *JournalEntry, l *Ledger) { je.Postings[1].PostingID = je.Postings[0].PostingID },
+			wantErr: ErrInvalidJournalEntry,
+		},
+		{
 			name: "invalid posting",
 			edit: func(je *JournalEntry, l *Ledger) {
 				je.Postings[0].TransactionAmount = Money{501, USD}
@@ -172,7 +184,7 @@ func TestJournalEntryValidate(t *testing.T) {
 		{
 			name: "posting not in functional currency",
 			edit: func(je *JournalEntry, l *Ledger) {
-				je.Postings[1] = Posting{PostingID: postingID, JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{-500, EUR}, FunctionalAmount: Money{-500, EUR}}
+				je.Postings[1] = Posting{PostingID: postingID(), JournalEntryID: entryID, AccountID: accountID, TransactionAmount: Money{-500, EUR}, FunctionalAmount: Money{-500, EUR}}
 			},
 			wantErr: ErrCurrencyMismatch,
 		},
