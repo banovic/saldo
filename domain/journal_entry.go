@@ -33,7 +33,7 @@ type JournalEntry struct {
 
 	// IdempotencyKey is supplied by the client for each JournalEntry client wants to record.
 	// It is used to guarantee that the JournalEntry is written exactly once per ledger.
-	// In database view IdempotencyKey is unique index on (LedgerID, IdempotencyKey).
+	// In database IdempotencyKey is unique index on (LedgerID, IdempotencyKey).
 	IdempotencyKey IdempotencyKey
 
 	// When event happened in the world. Stored as UTC timestamp.

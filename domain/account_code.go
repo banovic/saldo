@@ -19,6 +19,7 @@ var (
 
 // AccountCode identifies account within Ledger's chart of accounts.
 // Ledger's chart of accounts is set of all Accounts within Ledger.
+// In database AccountCode is unique index on (LedgerID, AccountCode).
 // Sr: Konto u Kontnom planu. Kontni plan je izveden od Kontnog okvira koji je zakonom propisan.
 // Situation is similar in other jurisdictions - law defines template for chart of accounts
 // and Ledger then implements that plan and produces its own chart of accounts (plan).
