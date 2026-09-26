@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX ledgers_name_key ON ledgers (LOWER(name));

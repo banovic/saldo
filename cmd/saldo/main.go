@@ -35,7 +35,7 @@ func run() error {
 
 	service := app.NewService(postgres.NewUnitOfWork(dbpool), time.Now, uuid.NewV7)
 
-	request := app.CreateLedgerRequest{}
+	request := app.CreateLedgerRequest{Name: "Test", FunctionalCurrency: "RSD", ReportingTimeZone: "Europe/Belgrade"}
 	resp, err := service.CreateLedger(ctx, request)
 	if err != nil {
 		// TODO err needs to be mapped to response codes
