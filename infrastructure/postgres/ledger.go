@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/banovic/saldo/domain"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -28,7 +29,7 @@ func (lr ledgerRepository) Insert(ctx context.Context, l domain.Ledger) error {
 
 	// Check what can go wrong with postgres - schema violation.
 	if pgErr, ok := pgError(err); ok {
-		if pgErr.Code == "23505" {
+		if pgErr.Code == pgerrcode.UniqueViolation {
 			// There can be multiple unique constraints, find out which.
 			if pgErr.ConstraintName == "ledgers_name_unique" {
 				return fmt.Errorf("%w: %q", domain.ErrDuplicateLedgerName, l.Name)
