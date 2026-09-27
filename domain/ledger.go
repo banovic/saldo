@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	ErrInvalidLedger = errors.New("invalid ledger")
+	ErrInvalidLedger       = errors.New("invalid ledger")
+	ErrDuplicateLedgerName = errors.New("duplicate ledger name")
 )
 
 // LedgerID identifies a Ledger.

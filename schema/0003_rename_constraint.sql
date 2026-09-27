@@ -1,0 +1,1 @@
+ALTER INDEX ledgers_name_key RENAME TO ledgers_name_unique;
