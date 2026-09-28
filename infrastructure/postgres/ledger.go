@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+	"uuid"
 
 	"github.com/banovic/saldo/domain"
 	"github.com/jackc/pgerrcode"
@@ -13,6 +15,15 @@ import (
 // ledgerRepository implements ledger related db operations.
 type ledgerRepository struct {
 	tx pgx.Tx
+}
+
+// ledgerRow represents row of data from database, before it is converted into domain object.
+type ledgerRow struct {
+	LedgerID           uuid.UUID
+	Name               domain.LedgerName
+	FunctionalCurrency domain.Currency
+	ReportingTimeZone  domain.TimeZone
+	CreatedAt          time.Time
 }
 
 // Insert inserts new Ledger into database, and returns error on failure.
@@ -28,31 +39,46 @@ func (lr ledgerRepository) Insert(ctx context.Context, l domain.Ledger) error {
 		l.CreatedAt,
 	)
 
-	// Check what can go wrong with postgres - schema violation.
-	if pgErr, ok := pgError(err); ok {
-		if pgErr.Code == pgerrcode.UniqueViolation {
-			// There can be multiple unique constraints, find out which.
-			if pgErr.ConstraintName == "ledgers_name_unique" {
-				return fmt.Errorf("%w: %q", domain.ErrDuplicateLedgerName, l.Name)
+	// Handle error.
+	if err != nil {
+		// Error is postgres error, with all relevant details.
+		if pgErr, ok := pgError(err); ok {
+			if pgErr.Code == pgerrcode.UniqueViolation {
+				// There can be multiple unique constraints, find out which.
+				if pgErr.ConstraintName == "ledgers_name_unique" {
+					return fmt.Errorf("%w: %q", domain.ErrDuplicateLedgerName, l.Name)
+				}
 			}
 		}
-		return fmt.Errorf("insert ledger error")
+		return fmt.Errorf("insert ledger: %w", err)
 	}
 	return nil
 }
 
+// Get one ledger by its id (which is primary key), returns error on failures.
 func (lr ledgerRepository) Get(ctx context.Context, id domain.LedgerID) (domain.Ledger, error) {
-	const query = "SELECT * FROM ledgers WHERE ledger_id = $1"
+	const query = "SELECT ledger_id, name, functional_currency, reporting_time_zone, created_at FROM ledgers WHERE ledger_id = $1"
 	row, err := lr.tx.Query(ctx, query, id)
 	if err != nil {
-		return domain.Ledger{}, nil
+		return domain.Ledger{}, fmt.Errorf("ledger get: %w", err)
 	}
-	ledger, err := pgx.CollectExactlyOneRow(row, pgx.RowToStructByName[domain.Ledger])
+	r, err := pgx.CollectExactlyOneRow(row, pgx.RowToStructByName[ledgerRow])
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Ledger{}, fmt.Errorf("%w: %v", domain.ErrLedgerNotFound, id)
 	}
 	if err != nil {
 		return domain.Ledger{}, fmt.Errorf("ledger get: %w", err)
 	}
-	return ledger, nil
+	return r.toDomain(), nil
+}
+
+// toDomain converts row returned from database, into domain object.
+func (r ledgerRow) toDomain() domain.Ledger {
+	return domain.Ledger{
+		LedgerID:           domain.LedgerID{UUID: r.LedgerID},
+		Name:               r.Name,
+		FunctionalCurrency: r.FunctionalCurrency,
+		ReportingTimeZone:  r.ReportingTimeZone,
+		CreatedAt:          r.CreatedAt,
+	}
 }
