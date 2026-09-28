@@ -21,7 +21,7 @@ func NewUnitOfWork(pool *pgxpool.Pool) *UnitOfWork {
 func (uow *UnitOfWork) Execute(ctx context.Context, work func(app.Repositories) error) error {
 	return pgx.BeginFunc(ctx, uow.pool, func(tx pgx.Tx) error {
 		// Repositories are implemented and unexported in this package.
-		// They are available to work function through app.Repositories interface.
+		// They are available to work function through app.Repositories struct.
 		repositories := app.Repositories{Ledger: ledgerRepository{tx: tx}, Account: accountRepository{tx: tx}}
 		return work(repositories)
 	})

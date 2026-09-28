@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/banovic/saldo/domain"
@@ -38,4 +39,20 @@ func (lr ledgerRepository) Insert(ctx context.Context, l domain.Ledger) error {
 		return fmt.Errorf("insert ledger error")
 	}
 	return nil
+}
+
+func (lr ledgerRepository) Get(ctx context.Context, id domain.LedgerID) (domain.Ledger, error) {
+	const query = "SELECT * FROM ledgers WHERE ledger_id = $1"
+	row, err := lr.tx.Query(ctx, query, id)
+	if err != nil {
+		return domain.Ledger{}, nil
+	}
+	ledger, err := pgx.CollectExactlyOneRow(row, pgx.RowToStructByName[domain.Ledger])
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Ledger{}, fmt.Errorf("%w: %v", domain.ErrLedgerNotFound, id)
+	}
+	if err != nil {
+		return domain.Ledger{}, fmt.Errorf("ledger get: %w", err)
+	}
+	return ledger, nil
 }

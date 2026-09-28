@@ -5,6 +5,7 @@ import "context"
 // LedgerRepository defines methods for ledger repository.
 type LedgerRepository interface {
 	Insert(ctx context.Context, l Ledger) error
+	Get(ctx context.Context, id LedgerID) (Ledger, error)
 }
 
 // AccountRepository defines methods for account repository.

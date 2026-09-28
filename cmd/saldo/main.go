@@ -35,12 +35,19 @@ func run() error {
 
 	service := app.NewService(postgres.NewUnitOfWork(dbpool), time.Now, uuid.NewV7)
 
-	request := app.CreateLedgerRequest{Name: "Test1", FunctionalCurrency: "RSD", ReportingTimeZone: "Europe/Belgrade"}
+	request := app.CreateLedgerRequest{Name: "Test4", FunctionalCurrency: "RSD", ReportingTimeZone: "Europe/Belgrade"}
 	resp, err := service.CreateLedger(ctx, request)
 	if err != nil {
 		// TODO err needs to be mapped to response codes
 		return err
 	}
 	fmt.Printf("%v\n", resp)
+
+	req := app.GetLedgerRequest{LedgerID: "01a0e2e7-c0bc-75d4-a4fc-786ac7410be7"}
+	resp2, err := service.GetLedger(ctx, req)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%v\n", resp2)
 	return nil
 }
