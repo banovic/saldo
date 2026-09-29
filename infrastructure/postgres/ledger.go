@@ -72,6 +72,24 @@ func (lr ledgerRepository) Get(ctx context.Context, id domain.LedgerID) (domain.
 	return r.toDomain(), nil
 }
 
+// List all ledgers, returns error on failures.
+func (lr ledgerRepository) List(ctx context.Context) ([]domain.Ledger, error) {
+	const query = "SELECT ledger_id, name, functional_currency, reporting_time_zone, created_at FROM ledgers"
+	rows, err := lr.tx.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("ledgers list: %w", err)
+	}
+	rs, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[ledgerRow])
+	if err != nil {
+		return nil, fmt.Errorf("list ledgers: %w", err)
+	}
+	drs := make([]domain.Ledger, 0, len(rs))
+	for _, r := range rs {
+		drs = append(drs, r.toDomain())
+	}
+	return drs, nil
+}
+
 // toDomain converts row returned from database, into domain object.
 func (r ledgerRow) toDomain() domain.Ledger {
 	return domain.Ledger{

@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/banovic/saldo/domain"
 )
@@ -12,13 +11,7 @@ type GetLedgerRequest struct {
 	LedgerID string
 }
 
-type GetLedgerResponse struct {
-	LedgerID           domain.LedgerID
-	Name               domain.LedgerName
-	FunctionalCurrency domain.Currency
-	ReportingTimeZone  domain.TimeZone
-	CreatedAt          time.Time
-}
+type GetLedgerResponse struct{ Ledger }
 
 func (svc *Service) GetLedger(ctx context.Context, req GetLedgerRequest) (GetLedgerResponse, error) {
 	ledgerID, err := domain.ParseLedgerID(req.LedgerID)

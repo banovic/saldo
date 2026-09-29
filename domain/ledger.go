@@ -31,16 +31,14 @@ func (lid LedgerID) IsZero() bool {
 }
 
 // Ledger is a complete, self-contained set of books for one accounting entity.
+// ReportingTimeZone is used to derive PostedOn dates in journal entries from OccurredAt timestamp.
+// CreatedAt is timestamp in UTC when the Ledger was created (app time is source of truth).
 type Ledger struct {
 	LedgerID           LedgerID
 	Name               LedgerName
 	FunctionalCurrency Currency
-
-	// ReportingTimeZone is used to derive PostedOn dates in journal entries from OccurredAt timestamp.
-	ReportingTimeZone TimeZone
-
-	// CreatedAt is timestamp in UTC when the Ledger was created (app time is source of truth).
-	CreatedAt time.Time
+	ReportingTimeZone  TimeZone
+	CreatedAt          time.Time
 }
 
 // Validate returns error if ledger is not valid.
