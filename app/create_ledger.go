@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/banovic/saldo/domain"
@@ -30,9 +31,13 @@ func (svc *Service) CreateLedger(ctx context.Context, req CreateLedgerRequest) (
 		return CreateLedgerResponse{}, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 	}
 
-	if err := svc.uow.Execute(ctx, func(r Repositories) error {
+	err := svc.uow.Execute(ctx, func(r Repositories) error {
 		return r.Ledger.Insert(ctx, ledger)
-	}); err != nil {
+	})
+	switch {
+	case errors.Is(err, domain.ErrDuplicateLedgerName):
+		return CreateLedgerResponse{}, fmt.Errorf("%w: %w", ErrInvalidInput, err)
+	case err != nil:
 		return CreateLedgerResponse{}, fmt.Errorf("%w: %w", ErrInternal, err)
 	}
 	return CreateLedgerResponse{LedgerID: ledger.LedgerID}, nil
