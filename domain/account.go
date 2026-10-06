@@ -3,6 +3,7 @@ package domain
 import (
 	"errors"
 	"fmt"
+	"time"
 	"uuid"
 )
 
@@ -28,6 +29,7 @@ type Account struct {
 	Type      AccountType
 	Code      AccountCode
 	Name      AccountName
+	CreatedAt time.Time
 }
 
 // Validate returns error if account is not valid.

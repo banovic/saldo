@@ -43,7 +43,7 @@ type JournalEntry struct {
 	PostedOn Date
 
 	// When event was recorded by the system. Stored as UTC timestamp.
-	RecordedAt time.Time
+	CreatedAt time.Time
 
 	// Description is natural text describing JournalEntry.
 	Description JournalEntryDescription

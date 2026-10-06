@@ -29,11 +29,12 @@ func (erid ExchangeRateID) IsZero() bool {
 // later once there is need for it.
 type ExchangeRate struct {
 	ExchangeRateID ExchangeRateID
-	From           Currency
-	To             Currency
+	BaseCurrency   Currency
+	QuoteCurrency  Currency
 	Num            int64
 	Den            int64
-	On             Date
+	Source         ExchangeRateSource
+	FixedOn        Date
 }
 
 // Validate returns errors if exchange rate is not valid.
@@ -45,18 +46,19 @@ type ExchangeRate struct {
 //   - numerator must be greater than zero
 //   - denominator must be greater than zero
 //   - on must be valid date
+//   - source must be valid
 func (er ExchangeRate) Validate() error {
 	if er.ExchangeRateID.IsZero() {
 		return fmt.Errorf("%w: exchange rate id is empty", ErrInvalidExchangeRate)
 	}
-	if err := er.From.Validate(); err != nil {
+	if err := er.BaseCurrency.Validate(); err != nil {
 		return fmt.Errorf("%w: from: %w", ErrInvalidExchangeRate, err)
 	}
-	if err := er.To.Validate(); err != nil {
+	if err := er.QuoteCurrency.Validate(); err != nil {
 		return fmt.Errorf("%w: to: %w", ErrInvalidExchangeRate, err)
 	}
-	if er.From == er.To {
-		return fmt.Errorf("%w: from and to must be different currencies: %q", ErrInvalidExchangeRate, er.From)
+	if er.BaseCurrency == er.QuoteCurrency {
+		return fmt.Errorf("%w: from and to must be different currencies: %q", ErrInvalidExchangeRate, er.BaseCurrency)
 	}
 	if er.Num <= 0 {
 		return fmt.Errorf("%w: numerator must be greater than 0", ErrInvalidExchangeRate)
@@ -64,8 +66,11 @@ func (er ExchangeRate) Validate() error {
 	if er.Den <= 0 {
 		return fmt.Errorf("%w: denominator must be greater than 0", ErrInvalidExchangeRate)
 	}
-	if err := er.On.Validate(); err != nil {
-		return fmt.Errorf("%w: on: %w", ErrInvalidExchangeRate, err)
+	if err := er.FixedOn.Validate(); err != nil {
+		return fmt.Errorf("%w: fixed on: %w", ErrInvalidExchangeRate, err)
+	}
+	if err := er.Source.Validate(); err != nil {
+		return fmt.Errorf("%w: source: %w", ErrInvalidExchangeRate, err)
 	}
 	return nil
 }
@@ -74,8 +79,8 @@ func (er ExchangeRate) Validate() error {
 // ExchangeRate instance is assumed to be valid when calling this method.
 // TODO!!! - mul() + divAndRoundHalfUp() - should be 1 atomic operation, it can prevent some overflow
 func (er ExchangeRate) Convert(m Money) (Money, error) {
-	if er.From != m.Currency {
-		return Money{}, fmt.Errorf("%w: from currency %q does not match money currency %q", ErrCurrencyMismatch, er.From, m.Currency)
+	if er.BaseCurrency != m.Currency {
+		return Money{}, fmt.Errorf("%w: from currency %q does not match money currency %q", ErrCurrencyMismatch, er.BaseCurrency, m.Currency)
 	}
 	num, err := mul(er.Num, m.MinorUnits)
 	if err != nil {
@@ -85,5 +90,5 @@ func (er ExchangeRate) Convert(m Money) (Money, error) {
 	if err != nil {
 		return Money{}, fmt.Errorf("%w: %w", ErrInvalidExchangeRateConvert, err)
 	}
-	return Money{MinorUnits: convertedUnits, Currency: er.To}, nil
+	return Money{MinorUnits: convertedUnits, Currency: er.QuoteCurrency}, nil
 }

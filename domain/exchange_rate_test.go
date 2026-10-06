@@ -30,11 +30,12 @@ func TestExchangeRateIDIsZero(t *testing.T) {
 func TestExchangeRateValidate(t *testing.T) {
 	valid := ExchangeRate{
 		ExchangeRateID: ExchangeRateID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8eb0")},
-		From:           EUR,
-		To:             RSD,
+		BaseCurrency:   EUR,
+		QuoteCurrency:  RSD,
 		Num:            11780,
 		Den:            100,
-		On:             Date{2026, time.September, 18},
+		Source:         NBS,
+		FixedOn:        Date{2026, time.September, 18},
 	}
 	with := func(f func(*ExchangeRate)) ExchangeRate {
 		er := valid
@@ -51,17 +52,19 @@ func TestExchangeRateValidate(t *testing.T) {
 		{"rate of one", with(func(er *ExchangeRate) { er.Num, er.Den = 1, 1 }), nil},
 
 		{"zero exchange rate id", with(func(er *ExchangeRate) { er.ExchangeRateID = ExchangeRateID{} }), ErrInvalidExchangeRate},
-		{"empty from currency", with(func(er *ExchangeRate) { er.From = "" }), ErrInvalidCurrency},
-		{"unknown from currency", with(func(er *ExchangeRate) { er.From = "XXX" }), ErrInvalidCurrency},
-		{"empty to currency", with(func(er *ExchangeRate) { er.To = "" }), ErrInvalidCurrency},
-		{"unknown to currency", with(func(er *ExchangeRate) { er.To = "XXX" }), ErrInvalidCurrency},
-		{"same currencies", with(func(er *ExchangeRate) { er.To = er.From }), ErrInvalidExchangeRate},
+		{"empty base currency", with(func(er *ExchangeRate) { er.BaseCurrency = "" }), ErrInvalidCurrency},
+		{"unknown base currency", with(func(er *ExchangeRate) { er.BaseCurrency = "XXX" }), ErrInvalidCurrency},
+		{"empty quote currency", with(func(er *ExchangeRate) { er.QuoteCurrency = "" }), ErrInvalidCurrency},
+		{"unknown quote currency", with(func(er *ExchangeRate) { er.QuoteCurrency = "XXX" }), ErrInvalidCurrency},
+		{"same currencies", with(func(er *ExchangeRate) { er.QuoteCurrency = er.BaseCurrency }), ErrInvalidExchangeRate},
 		{"zero numerator", with(func(er *ExchangeRate) { er.Num = 0 }), ErrInvalidExchangeRate},
 		{"negative numerator", with(func(er *ExchangeRate) { er.Num = -1 }), ErrInvalidExchangeRate},
 		{"zero denominator", with(func(er *ExchangeRate) { er.Den = 0 }), ErrInvalidExchangeRate},
 		{"negative denominator", with(func(er *ExchangeRate) { er.Den = -1 }), ErrInvalidExchangeRate},
-		{"zero on date", with(func(er *ExchangeRate) { er.On = Date{} }), ErrInvalidDate},
-		{"impossible on date", with(func(er *ExchangeRate) { er.On = Date{2026, time.February, 30} }), ErrInvalidDate},
+		{"zero fixed on date", with(func(er *ExchangeRate) { er.FixedOn = Date{} }), ErrInvalidDate},
+		{"impossible fixed on date", with(func(er *ExchangeRate) { er.FixedOn = Date{2026, time.February, 30} }), ErrInvalidDate},
+		{"empty source", with(func(er *ExchangeRate) { er.Source = "" }), ErrInvalidExchangeRateSource},
+		{"unknown source", with(func(er *ExchangeRate) { er.Source = "ecb" }), ErrInvalidExchangeRateSource},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -81,11 +84,11 @@ func TestExchangeRateConvert(t *testing.T) {
 	rate := func(from, to Currency, num, den int64) ExchangeRate {
 		return ExchangeRate{
 			ExchangeRateID: rateID,
-			From:           from,
-			To:             to,
+			BaseCurrency:   from,
+			QuoteCurrency:  to,
 			Num:            num,
 			Den:            den,
-			On:             Date{2026, time.September, 18},
+			FixedOn:        Date{2026, time.September, 18},
 		}
 	}
 
