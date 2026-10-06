@@ -25,8 +25,6 @@ func (erid ExchangeRateID) IsZero() bool {
 // Exchange rate is saved as 2 integers representing: Num/Den.
 // For example: exchange rate 1 EUR = 117.8 RSD is stored as Num: 1178, Den: 10
 // Num/Den converts an amount in From Currency into an amount in To Currency.
-// TODO!!! - this should be extended with exchange rate source (NBS, ECB ...), but
-// later once there is need for it.
 type ExchangeRate struct {
 	ExchangeRateID ExchangeRateID
 	BaseCurrency   Currency
