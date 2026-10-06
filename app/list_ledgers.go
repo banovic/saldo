@@ -22,7 +22,7 @@ func (svc *Service) ListLedgers(ctx context.Context, req ListLedgersRequest) (Li
 		return err
 	})
 	if err != nil {
-		return ListLedgersResponse{}, fmt.Errorf("list ledgers: %w", err)
+		return ListLedgersResponse{}, fmt.Errorf("%w: %w", ErrInternal, err)
 	}
 	dtoLedgers := make([]Ledger, 0, len(ledgers))
 	for _, ledger := range ledgers {

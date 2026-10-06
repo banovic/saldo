@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/banovic/saldo/domain"
@@ -27,8 +28,11 @@ func (svc *Service) GetLedger(ctx context.Context, req GetLedgerRequest) (GetLed
 		return err
 	})
 
-	if err != nil {
-		return GetLedgerResponse{}, fmt.Errorf("get ledger: %w", err)
+	switch {
+	case errors.Is(err, domain.ErrLedgerNotFound):
+		return GetLedgerResponse{}, fmt.Errorf("%w: %w", ErrNotFound, err)
+	case err != nil:
+		return GetLedgerResponse{}, fmt.Errorf("%w", err)
 	}
 
 	return GetLedgerResponse{
