@@ -32,14 +32,8 @@ func (svc *Service) GetLedger(ctx context.Context, req GetLedgerRequest) (GetLed
 	case errors.Is(err, domain.ErrLedgerNotFound):
 		return GetLedgerResponse{}, fmt.Errorf("%w: %w", ErrNotFound, err)
 	case err != nil:
-		return GetLedgerResponse{}, fmt.Errorf("%w", err)
+		return GetLedgerResponse{}, fmt.Errorf("%w: %w", ErrInternal, err)
 	}
 
-	return GetLedgerResponse{
-		LedgerID:           ledger.LedgerID,
-		Name:               ledger.Name,
-		FunctionalCurrency: ledger.FunctionalCurrency,
-		ReportingTimeZone:  ledger.ReportingTimeZone,
-		CreatedAt:          ledger.CreatedAt,
-	}, nil
+	return GetLedgerResponse{ledgerFromDomain(ledger)}, nil
 }

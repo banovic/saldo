@@ -26,13 +26,7 @@ func (svc *Service) ListLedgers(ctx context.Context, req ListLedgersRequest) (Li
 	}
 	dtoLedgers := make([]Ledger, 0, len(ledgers))
 	for _, ledger := range ledgers {
-		dtoLedgers = append(dtoLedgers, Ledger{
-			LedgerID:           ledger.LedgerID,
-			Name:               ledger.Name,
-			FunctionalCurrency: ledger.FunctionalCurrency,
-			ReportingTimeZone:  ledger.ReportingTimeZone,
-			CreatedAt:          ledger.CreatedAt,
-		})
+		dtoLedgers = append(dtoLedgers, ledgerFromDomain(ledger))
 	}
 	return ListLedgersResponse{Ledgers: dtoLedgers}, nil
 }

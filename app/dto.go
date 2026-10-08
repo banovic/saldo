@@ -14,3 +14,13 @@ type Ledger struct {
 	ReportingTimeZone  domain.TimeZone
 	CreatedAt          time.Time
 }
+
+func ledgerFromDomain(l domain.Ledger) Ledger {
+	return Ledger{
+		LedgerID:           l.LedgerID,
+		Name:               l.Name,
+		FunctionalCurrency: l.FunctionalCurrency,
+		ReportingTimeZone:  l.ReportingTimeZone,
+		CreatedAt:          l.CreatedAt,
+	}
+}
