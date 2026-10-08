@@ -61,7 +61,13 @@ func run() error {
 	ctx := context.Background()
 
 	// Build service.
-	dbpool, err := pgxpool.New(ctx, os.Getenv("SALDO_DATABASE_URL"))
+
+	dbURL := os.Getenv("SALDO_DATABASE_URL")
+	if dbURL == "" {
+		return fmt.Errorf("missing env var SALDO_DATABASE_URL")
+	}
+
+	dbpool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		return fmt.Errorf("create database pool: %w", err)
 	}
