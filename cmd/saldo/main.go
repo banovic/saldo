@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"time"
@@ -16,16 +17,50 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func main() {
-	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+type command func(ctx context.Context, s *app.Service) (any, error)
+
+func parseCommand(args []string) (command, error) {
+	switch args[0] {
+	case "create_ledger":
+		var req app.CreateLedgerRequest
+		fs := flag.NewFlagSet("create_ledger", flag.ContinueOnError)
+		fs.StringVar(&req.Name, "name", "", "Ledger name")
+		fs.StringVar(&req.FunctionalCurrency, "functional_currency", "", "Functional currency")
+		fs.StringVar(&req.ReportingTimeZone, "reporting_time_zone", "", "Reporting time zone IANA format")
+		if err := fs.Parse(args[1:]); err != nil {
+			return nil, err
+		}
+		return func(ctx context.Context, s *app.Service) (any, error) {
+			return s.CreateLedger(ctx, req)
+		}, nil
+	case "get_ledger":
+		var req app.GetLedgerRequest
+		fs := flag.NewFlagSet("get_ledger", flag.ContinueOnError)
+		fs.StringVar(&req.LedgerID, "ledger_id", "", "Ledger id")
+		if err := fs.Parse(args[1:]); err != nil {
+			return nil, err
+		}
+		return func(ctx context.Context, s *app.Service) (any, error) {
+			return s.GetLedger(ctx, req)
+		}, nil
+	case "list_ledgers":
+		var req app.ListLedgersRequest
+		return func(ctx context.Context, s *app.Service) (any, error) {
+			return s.ListLedgers(ctx, req)
+		}, nil
+	default:
+		return nil, fmt.Errorf("Unrecognized command: %s", args[0])
 	}
 }
 
 func run() error {
+	if len(os.Args) < 2 {
+		return fmt.Errorf("Expected at least 2 arguments")
+	}
+
 	ctx := context.Background()
 
+	// Build service.
 	dbpool, err := pgxpool.New(ctx, os.Getenv("SALDO_DATABASE_URL"))
 	if err != nil {
 		return fmt.Errorf("create database pool: %w", err)
@@ -35,28 +70,24 @@ func run() error {
 
 	service := app.NewService(postgres.NewUnitOfWork(dbpool), time.Now, uuid.NewV7)
 
-	request := app.CreateLedgerRequest{Name: "Test6", FunctionalCurrency: "RSD", ReportingTimeZone: "Europe/Belgrade"}
-	resp, err := service.CreateLedger(ctx, request)
+	command, err := parseCommand(os.Args[1:])
 	if err != nil {
-		// TODO err needs to be mapped to response codes
 		return err
 	}
+
+	resp, err := command(ctx, service)
+	if err != nil {
+		return err
+	}
+
 	fmt.Printf("%v\n", resp)
 
-	req := app.GetLedgerRequest{LedgerID: "01a0e2e7-c0bc-75d4-a4fc-786ac7410be7"}
-	resp2, err := service.GetLedger(ctx, req)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("%v\n", resp2)
-
-	req3 := app.ListLedgersRequest{}
-	resp3, err := service.ListLedgers(ctx, req3)
-	if err != nil {
-		return err
-	}
-	for _, l := range resp3.Ledgers {
-		fmt.Printf("%v\n", l)
-	}
 	return nil
+}
+
+func main() {
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
