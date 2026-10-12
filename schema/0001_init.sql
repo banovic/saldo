@@ -21,6 +21,12 @@ create table accounts (
     created_at timestamptz not null
 );
 
+/*
+Code (konto) should come from Kontnog plana, which should come from Kontni okvir.
+Code should be unique inside one ledger.
+*/
+create unique index accounts_ledger_id_code_unique on accounts(ledger_id, lower(code));
+
 create table journal_entries (
     journal_entry_id uuid primary key,
     ledger_id uuid not null references ledgers(ledger_id) on delete restrict,
