@@ -41,8 +41,44 @@ func exitCode(err error) int {
 	}
 }
 
+func buildCreateLedgerCommand(args []string) (command, error) {
+	var req app.CreateLedgerRequest
+	fs := flag.NewFlagSet("create_ledger", flag.ContinueOnError)
+	fs.StringVar(&req.Name, "name", "", "Ledger name")
+	fs.StringVar(&req.FunctionalCurrency, "functional_currency", "", "Functional currency")
+	fs.StringVar(&req.ReportingTimeZone, "reporting_time_zone", "", "Reporting time zone IANA format")
+	if err := fs.Parse(args); err != nil {
+		return nil, fmt.Errorf("%w: %w", errFlagParse, err)
+	}
+	return func(ctx context.Context, s *app.Service) (any, error) {
+		return s.CreateLedger(ctx, req)
+	}, nil
+}
+
+func buildGetLedgerCommand(args []string) (command, error) {
+	var req app.GetLedgerRequest
+	fs := flag.NewFlagSet("get_ledger", flag.ContinueOnError)
+	fs.StringVar(&req.LedgerID, "ledger_id", "", "Ledger id")
+	if err := fs.Parse(args); err != nil {
+		return nil, fmt.Errorf("%w: %w", errFlagParse, err)
+	}
+	return func(ctx context.Context, s *app.Service) (any, error) {
+		return s.GetLedger(ctx, req)
+	}, nil
+}
+
+func buildListLedgersCommand(args []string) (command, error) {
+	var req app.ListLedgersRequest
+	fs := flag.NewFlagSet("list_ledgers", flag.ContinueOnError)
+	if err := fs.Parse(args); err != nil {
+		return nil, fmt.Errorf("%w: %w", errFlagParse, err)
+	}
+	return func(ctx context.Context, s *app.Service) (any, error) {
+		return s.ListLedgers(ctx, req)
+	}, nil
+}
+
 func buildCreateAccountCommand(args []string) (command, error) {
-	// Prepare FlagSet for create account command.
 	var req app.CreateAccountRequest
 	fs := flag.NewFlagSet("create_account", flag.ContinueOnError)
 	fs.StringVar(&req.LedgerID, "ledger_id", "", "Ledger ID")
@@ -62,36 +98,11 @@ func buildCreateAccountCommand(args []string) (command, error) {
 func parseCommand(args []string) (command, error) {
 	switch args[0] {
 	case "create_ledger":
-		var req app.CreateLedgerRequest
-		fs := flag.NewFlagSet("create_ledger", flag.ContinueOnError)
-		fs.StringVar(&req.Name, "name", "", "Ledger name")
-		fs.StringVar(&req.FunctionalCurrency, "functional_currency", "", "Functional currency")
-		fs.StringVar(&req.ReportingTimeZone, "reporting_time_zone", "", "Reporting time zone IANA format")
-		if err := fs.Parse(args[1:]); err != nil {
-			return nil, fmt.Errorf("%w: %w", errFlagParse, err)
-		}
-		return func(ctx context.Context, s *app.Service) (any, error) {
-			return s.CreateLedger(ctx, req)
-		}, nil
+		return buildCreateLedgerCommand(args[1:])
 	case "get_ledger":
-		var req app.GetLedgerRequest
-		fs := flag.NewFlagSet("get_ledger", flag.ContinueOnError)
-		fs.StringVar(&req.LedgerID, "ledger_id", "", "Ledger id")
-		if err := fs.Parse(args[1:]); err != nil {
-			return nil, fmt.Errorf("%w: %w", errFlagParse, err)
-		}
-		return func(ctx context.Context, s *app.Service) (any, error) {
-			return s.GetLedger(ctx, req)
-		}, nil
+		return buildGetLedgerCommand(args[1:])
 	case "list_ledgers":
-		var req app.ListLedgersRequest
-		fs := flag.NewFlagSet("list_ledgers", flag.ContinueOnError)
-		if err := fs.Parse(args[1:]); err != nil {
-			return nil, fmt.Errorf("%w: %w", errFlagParse, err)
-		}
-		return func(ctx context.Context, s *app.Service) (any, error) {
-			return s.ListLedgers(ctx, req)
-		}, nil
+		return buildListLedgersCommand(args[1:])
 	case "create_account":
 		return buildCreateAccountCommand(args[1:])
 	default:
