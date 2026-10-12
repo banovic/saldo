@@ -15,10 +15,10 @@ func NewService(uow UnitOfWork, now func() time.Time, idGenerator func() uuid.UU
 	return &Service{uow: uow, now: now, idGenerator: idGenerator}
 }
 
-func (svc *Service) generateUUID() uuid.UUID {
-	return svc.idGenerator()
+func (s *Service) generateUUID() uuid.UUID {
+	return s.idGenerator()
 }
 
-func (svc *Service) utcTimestamp() time.Time {
-	return svc.now().UTC().Truncate(time.Microsecond)
+func (s *Service) utcTimestamp() time.Time {
+	return s.now().UTC().Truncate(time.Microsecond)
 }

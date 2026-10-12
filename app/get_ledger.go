@@ -14,7 +14,7 @@ type GetLedgerRequest struct {
 
 type GetLedgerResponse struct{ Ledger }
 
-func (svc *Service) GetLedger(ctx context.Context, req GetLedgerRequest) (GetLedgerResponse, error) {
+func (s *Service) GetLedger(ctx context.Context, req GetLedgerRequest) (GetLedgerResponse, error) {
 	ledgerID, err := domain.ParseLedgerID(req.LedgerID)
 	if err != nil {
 		return GetLedgerResponse{}, fmt.Errorf("%w: %q: %w", ErrInvalidInput, req.LedgerID, err)
@@ -22,7 +22,7 @@ func (svc *Service) GetLedger(ctx context.Context, req GetLedgerRequest) (GetLed
 
 	var ledger domain.Ledger
 
-	err = svc.uow.Execute(ctx, func(r Repositories) error {
+	err = s.uow.Execute(ctx, func(r Repositories) error {
 		var err error
 		ledger, err = r.Ledger.Get(ctx, ledgerID)
 		return err

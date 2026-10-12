@@ -13,10 +13,10 @@ type ListLedgersResponse struct {
 	Ledgers []Ledger
 }
 
-func (svc *Service) ListLedgers(ctx context.Context, req ListLedgersRequest) (ListLedgersResponse, error) {
+func (s *Service) ListLedgers(ctx context.Context, req ListLedgersRequest) (ListLedgersResponse, error) {
 	var ledgers []domain.Ledger
 
-	err := svc.uow.Execute(ctx, func(r Repositories) error {
+	err := s.uow.Execute(ctx, func(r Repositories) error {
 		var err error
 		ledgers, err = r.Ledger.List(ctx)
 		return err
