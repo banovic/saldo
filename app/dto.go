@@ -24,3 +24,24 @@ func ledgerFromDomain(l domain.Ledger) Ledger {
 		CreatedAt:          l.CreatedAt,
 	}
 }
+
+// Account DTO.
+type Account struct {
+	AccountID domain.AccountID
+	LedgerID  domain.LedgerID
+	Type      domain.AccountType
+	Code      domain.AccountCode
+	Name      domain.AccountName
+	CreatedAt time.Time
+}
+
+func accountFromDomain(a domain.Account) Account {
+	return Account{
+		AccountID: a.AccountID,
+		LedgerID:  a.LedgerID,
+		Type:      a.Type,
+		Code:      a.Code,
+		Name:      a.Name,
+		CreatedAt: a.CreatedAt,
+	}
+}

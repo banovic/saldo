@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	ErrInvalidAccount = errors.New("invalid account")
+	ErrInvalidAccount               = errors.New("invalid account")
+	ErrDuplicateAccountCodeInLedger = errors.New("duplicate account code in ledger")
 )
 
 // AccountID identifies a single Account.

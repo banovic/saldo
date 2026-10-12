@@ -41,6 +41,24 @@ func exitCode(err error) int {
 	}
 }
 
+func buildCreateAccountCommand(args []string) (command, error) {
+	// Prepare FlagSet for create account command.
+	var req app.CreateAccountRequest
+	fs := flag.NewFlagSet("create_account", flag.ContinueOnError)
+	fs.StringVar(&req.LedgerID, "ledger_id", "", "Ledger ID")
+	fs.StringVar(&req.Type, "type", "", "Account type ('asset', 'liability', 'equity', 'revenue', 'expense')")
+	fs.StringVar(&req.Code, "code", "", "Account code")
+	fs.StringVar(&req.Name, "name", "", "Account name")
+
+	if err := fs.Parse(args); err != nil {
+		return nil, fmt.Errorf("%w: %w", errFlagParse, err)
+	}
+
+	return func(ctx context.Context, s *app.Service) (any, error) {
+		return s.CreateAccount(ctx, req)
+	}, nil
+}
+
 func parseCommand(args []string) (command, error) {
 	switch args[0] {
 	case "create_ledger":
@@ -74,6 +92,8 @@ func parseCommand(args []string) (command, error) {
 		return func(ctx context.Context, s *app.Service) (any, error) {
 			return s.ListLedgers(ctx, req)
 		}, nil
+	case "create_account":
+		return buildCreateAccountCommand(args[1:])
 	default:
 		return nil, fmt.Errorf("%w: unrecognized command: %q", errUsage, args[0])
 	}
@@ -82,9 +102,10 @@ func parseCommand(args []string) (command, error) {
 const usage = `Usage: SALDO_DATABASE_URL=<url> saldo <command> [flags]
 
 Commands:
-  create_ledger  Create a new ledger.
-  get_ledger     Show one ledger.
-  list_ledgers   List all ledgers.
+  create_ledger   Create a new ledger.
+  get_ledger      Show one ledger.
+  list_ledgers    List all ledgers.
+  create_account  Create a new account.
 
 Run 'saldo <command> -h' to see the command's flags.
 `

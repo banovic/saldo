@@ -17,7 +17,7 @@ type GetLedgerResponse struct{ Ledger }
 func (s *Service) GetLedger(ctx context.Context, req GetLedgerRequest) (GetLedgerResponse, error) {
 	ledgerID, err := domain.ParseLedgerID(req.LedgerID)
 	if err != nil {
-		return GetLedgerResponse{}, fmt.Errorf("%w: %q: %w", ErrInvalidInput, req.LedgerID, err)
+		return GetLedgerResponse{}, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 	}
 
 	var ledger domain.Ledger

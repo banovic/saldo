@@ -7,11 +7,12 @@ import (
 )
 
 type fakeUnitOfWork struct {
-	ledgers domain.LedgerRepository
+	ledgers  domain.LedgerRepository
+	accounts domain.AccountRepository
 }
 
 func (f fakeUnitOfWork) Execute(ctx context.Context, work func(Repositories) error) error {
-	return work(Repositories{Ledger: f.ledgers})
+	return work(Repositories{Ledger: f.ledgers, Account: f.accounts})
 }
 
 // fakeLedgerRepository returns canned results; every method returns err when set.
@@ -37,4 +38,13 @@ func (f fakeLedgerRepository) List(ctx context.Context) ([]domain.Ledger, error)
 		return nil, f.err
 	}
 	return f.ledgers, nil
+}
+
+// fakeAccountRepository returns canned results; every method returns err when set.
+type fakeAccountRepository struct {
+	err error
+}
+
+func (f fakeAccountRepository) Insert(ctx context.Context, a domain.Account) error {
+	return f.err
 }
