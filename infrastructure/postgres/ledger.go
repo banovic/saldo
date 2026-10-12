@@ -10,6 +10,7 @@ import (
 	"github.com/banovic/saldo/domain"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // ledgerRepository implements ledger related db operations.
@@ -42,7 +43,7 @@ func (lr ledgerRepository) Insert(ctx context.Context, l domain.Ledger) error {
 	// Handle error.
 	if err != nil {
 		// Error is postgres error, with all relevant details.
-		if pgErr, ok := pgError(err); ok {
+		if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
 			if pgErr.Code == pgerrcode.UniqueViolation {
 				// There can be multiple unique constraints, find out which.
 				if pgErr.ConstraintName == "ledgers_name_unique" {
