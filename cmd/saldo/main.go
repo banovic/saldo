@@ -78,6 +78,18 @@ func buildListLedgersCommand(args []string) (command, error) {
 	}, nil
 }
 
+func buildGetAccountCommand(args []string) (command, error) {
+	var req app.GetAccountRequest
+	fs := flag.NewFlagSet("get_account", flag.ContinueOnError)
+	fs.StringVar(&req.AccountID, "account_id", "", "Account id")
+	if err := fs.Parse(args); err != nil {
+		return nil, fmt.Errorf("%w: %w", errFlagParse, err)
+	}
+	return func(ctx context.Context, s *app.Service) (any, error) {
+		return s.GetAccount(ctx, req)
+	}, nil
+}
+
 func buildCreateAccountCommand(args []string) (command, error) {
 	var req app.CreateAccountRequest
 	fs := flag.NewFlagSet("create_account", flag.ContinueOnError)
@@ -105,6 +117,8 @@ func parseCommand(args []string) (command, error) {
 		return buildListLedgersCommand(args[1:])
 	case "create_account":
 		return buildCreateAccountCommand(args[1:])
+	case "get_account":
+		return buildGetAccountCommand(args[1:])
 	default:
 		return nil, fmt.Errorf("%w: unrecognized command: %q", errUsage, args[0])
 	}
@@ -117,6 +131,7 @@ Commands:
   get_ledger      Show one ledger.
   list_ledgers    List all ledgers.
   create_account  Create a new account.
+  get_account     Show one account.
 
 Run 'saldo <command> -h' to see the command's flags.
 `

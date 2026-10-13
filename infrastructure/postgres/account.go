@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+	"uuid"
 
 	"github.com/banovic/saldo/domain"
 	"github.com/jackc/pgerrcode"
@@ -13,6 +15,26 @@ import (
 
 type accountRepository struct {
 	tx pgx.Tx
+}
+
+type accountRow struct {
+	AccountID uuid.UUID
+	LedgerID  uuid.UUID
+	Type      domain.AccountType
+	Code      domain.AccountCode
+	Name      domain.AccountName
+	CreatedAt time.Time
+}
+
+func (row accountRow) toDomain() domain.Account {
+	return domain.Account{
+		AccountID: domain.AccountID{UUID: row.AccountID},
+		LedgerID:  domain.LedgerID{UUID: row.LedgerID},
+		Type:      row.Type,
+		Code:      row.Code,
+		Name:      row.Name,
+		CreatedAt: row.CreatedAt,
+	}
 }
 
 func (r accountRepository) Insert(ctx context.Context, a domain.Account) error {
@@ -39,4 +61,20 @@ func (r accountRepository) Insert(ctx context.Context, a domain.Account) error {
 	}
 
 	return nil
+}
+
+func (r accountRepository) Get(ctx context.Context, id domain.AccountID) (domain.Account, error) {
+	const query = "SELECT account_id, ledger_id, type, code, name, created_at FROM accounts WHERE account_id = $1"
+	row, err := r.tx.Query(ctx, query, id)
+	if err != nil {
+		return domain.Account{}, fmt.Errorf("account get: %w", err)
+	}
+	res, err := pgx.CollectExactlyOneRow(row, pgx.RowToStructByName[accountRow])
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Account{}, fmt.Errorf("%w: %v", domain.ErrAccountNotFound, id)
+	}
+	if err != nil {
+		return domain.Account{}, fmt.Errorf("account get: %w", err)
+	}
+	return res.toDomain(), nil
 }

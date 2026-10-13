@@ -20,12 +20,9 @@ func (s *Service) GetLedger(ctx context.Context, req GetLedgerRequest) (GetLedge
 		return GetLedgerResponse{}, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 	}
 
-	var ledger domain.Ledger
-
-	err = s.uow.Execute(ctx, func(r Repositories) error {
-		var err error
-		ledger, err = r.Ledger.Get(ctx, ledgerID)
-		return err
+	// Get values from db.
+	ledger, err := executeValue(ctx, s.uow, func(rs Repositories) (domain.Ledger, error) {
+		return rs.Ledger.Get(ctx, ledgerID)
 	})
 
 	switch {

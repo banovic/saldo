@@ -9,11 +9,20 @@ import (
 
 var (
 	ErrInvalidAccount               = errors.New("invalid account")
+	ErrAccountNotFound              = errors.New("account not found")
 	ErrDuplicateAccountCodeInLedger = errors.New("duplicate account code in ledger")
 )
 
 // AccountID identifies a single Account.
 type AccountID struct{ uuid.UUID }
+
+func ParseAccountID(s string) (AccountID, error) {
+	id, err := uuid.Parse(s)
+	if err != nil {
+		return AccountID{}, fmt.Errorf("account id %q: %w", s, err)
+	}
+	return AccountID{id}, nil
+}
 
 // IsZero checks if account id is zero.
 func (aid AccountID) IsZero() bool {

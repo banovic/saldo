@@ -27,6 +27,17 @@ type ledgerRow struct {
 	CreatedAt          time.Time
 }
 
+// toDomain converts row returned from database, into domain object.
+func (row ledgerRow) toDomain() domain.Ledger {
+	return domain.Ledger{
+		LedgerID:           domain.LedgerID{UUID: row.LedgerID},
+		Name:               row.Name,
+		FunctionalCurrency: row.FunctionalCurrency,
+		ReportingTimeZone:  row.ReportingTimeZone,
+		CreatedAt:          row.CreatedAt,
+	}
+}
+
 // Insert inserts new Ledger into database, and returns error on failure.
 func (lr ledgerRepository) Insert(ctx context.Context, l domain.Ledger) error {
 	const query = "INSERT INTO ledgers (ledger_id, name, functional_currency, reporting_time_zone, created_at) VALUES ($1, $2, $3, $4, $5)"
@@ -89,15 +100,4 @@ func (lr ledgerRepository) List(ctx context.Context) ([]domain.Ledger, error) {
 		drs = append(drs, r.toDomain())
 	}
 	return drs, nil
-}
-
-// toDomain converts row returned from database, into domain object.
-func (r ledgerRow) toDomain() domain.Ledger {
-	return domain.Ledger{
-		LedgerID:           domain.LedgerID{UUID: r.LedgerID},
-		Name:               r.Name,
-		FunctionalCurrency: r.FunctionalCurrency,
-		ReportingTimeZone:  r.ReportingTimeZone,
-		CreatedAt:          r.CreatedAt,
-	}
 }

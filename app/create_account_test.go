@@ -39,7 +39,6 @@ func TestCreateAccount(t *testing.T) {
 	}{
 		{"valid", valid, nil, nil, created, nil},
 		{"invalid ledger id", invalidID, nil, nil, CreateAccountResponse{}, ErrInvalidInput},
-		{"invalid ledger id keeps cause", invalidID, nil, nil, CreateAccountResponse{}, domain.ErrInvalidLedgerID},
 		{"invalid account", invalidType, nil, nil, CreateAccountResponse{}, ErrInvalidInput},
 		{"invalid account keeps cause", invalidType, nil, nil, CreateAccountResponse{}, domain.ErrInvalidAccount},
 		{"ledger not found", valid, notFound, nil, CreateAccountResponse{}, ErrNotFound},

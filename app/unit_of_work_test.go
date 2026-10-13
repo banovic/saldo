@@ -42,9 +42,17 @@ func (f fakeLedgerRepository) List(ctx context.Context) ([]domain.Ledger, error)
 
 // fakeAccountRepository returns canned results; every method returns err when set.
 type fakeAccountRepository struct {
-	err error
+	account domain.Account // returned by Get
+	err     error
 }
 
 func (f fakeAccountRepository) Insert(ctx context.Context, a domain.Account) error {
 	return f.err
+}
+
+func (f fakeAccountRepository) Get(ctx context.Context, id domain.AccountID) (domain.Account, error) {
+	if f.err != nil {
+		return domain.Account{}, f.err
+	}
+	return f.account, nil
 }

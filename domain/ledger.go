@@ -9,7 +9,6 @@ import (
 
 var (
 	ErrInvalidLedger       = errors.New("invalid ledger")
-	ErrInvalidLedgerID     = errors.New("invalid ledger id")
 	ErrDuplicateLedgerName = errors.New("duplicate ledger name")
 	ErrLedgerNotFound      = errors.New("ledger not found")
 )
@@ -20,7 +19,7 @@ type LedgerID struct{ uuid.UUID }
 func ParseLedgerID(s string) (LedgerID, error) {
 	id, err := uuid.Parse(s)
 	if err != nil {
-		return LedgerID{}, fmt.Errorf("%w: %q: %w", ErrInvalidLedgerID, s, err)
+		return LedgerID{}, fmt.Errorf("ledger id %q: %w", s, err)
 	}
 	return LedgerID{id}, nil
 }

@@ -38,7 +38,6 @@ func TestGetLedger(t *testing.T) {
 	}{
 		{"found", valid, fakeLedgerRepository{ledger: ledger}, found, nil},
 		{"invalid id", invalid, fakeLedgerRepository{}, GetLedgerResponse{}, ErrInvalidInput},
-		{"invalid id keeps cause", invalid, fakeLedgerRepository{}, GetLedgerResponse{}, domain.ErrInvalidLedgerID},
 		{"not found", valid, fakeLedgerRepository{err: notFound}, GetLedgerResponse{}, ErrNotFound},
 		{"not found keeps cause", valid, fakeLedgerRepository{err: notFound}, GetLedgerResponse{}, domain.ErrLedgerNotFound},
 		{"repository failure", valid, fakeLedgerRepository{err: errors.New("connection reset")}, GetLedgerResponse{}, ErrInternal},
