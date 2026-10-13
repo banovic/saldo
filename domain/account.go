@@ -24,11 +24,6 @@ func ParseAccountID(s string) (AccountID, error) {
 	return AccountID{id}, nil
 }
 
-// IsZero checks if account id is zero.
-func (aid AccountID) IsZero() bool {
-	return aid.UUID == uuid.Nil()
-}
-
 // Account is a named category that value flows through.
 //
 // There is no Balance stored in Account. Balance is calculated by
@@ -51,10 +46,10 @@ type Account struct {
 //   - code is valid
 //   - name is valid
 func (a Account) Validate() error {
-	if a.AccountID.IsZero() {
+	if a.AccountID == (AccountID{}) {
 		return fmt.Errorf("%w: account id is zero", ErrInvalidAccount)
 	}
-	if a.LedgerID.IsZero() {
+	if a.LedgerID == (LedgerID{}) {
 		return fmt.Errorf("%w: ledger id is zero", ErrInvalidAccount)
 	}
 	if err := a.Type.Validate(); err != nil {

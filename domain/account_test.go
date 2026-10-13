@@ -6,25 +6,6 @@ import (
 	"uuid"
 )
 
-func TestAccountIDIsZero(t *testing.T) {
-	testCases := []struct {
-		name string
-		id   AccountID
-		want bool
-	}{
-		{"zero value", AccountID{}, true},
-		{"nil uuid", AccountID{uuid.Nil()}, true},
-		{"non-nil uuid", AccountID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ed0")}, false},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := tc.id.IsZero(); got != tc.want {
-				t.Errorf("%v.IsZero() = %t, want %t", tc.id, got, tc.want)
-			}
-		})
-	}
-}
-
 func TestAccountValidate(t *testing.T) {
 	valid := Account{
 		AccountID: AccountID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ed0")},

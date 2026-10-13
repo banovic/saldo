@@ -14,11 +14,6 @@ var (
 // JournalEntryID identifies a single Journal Entry.
 type JournalEntryID struct{ uuid.UUID }
 
-// IsZero checks if journal entry id is zero.
-func (jeid JournalEntryID) IsZero() bool {
-	return jeid.UUID == uuid.Nil()
-}
-
 // JournalEntry is single accounting event - an atomic unit of Ledger.
 //
 // An entry consists of 2 or more Postings whose FunctionalAmounts sum to zero.
@@ -70,7 +65,7 @@ type JournalEntry struct {
 //   - PostedOn must be valid date
 //   - PostedOn must not be before OccurredAt
 func (je JournalEntry) Validate(l Ledger) error {
-	if je.JournalEntryID.IsZero() {
+	if je.JournalEntryID == (JournalEntryID{}) {
 		return fmt.Errorf("%w: journal entry id is zero", ErrInvalidJournalEntry)
 	}
 	if je.LedgerID != l.LedgerID {
@@ -104,7 +99,7 @@ func (je JournalEntry) Validate(l Ledger) error {
 	if !sum.IsZero() {
 		return fmt.Errorf("%w: sum of postings functional amounts must be zero, got %v", ErrInvalidJournalEntry, sum)
 	}
-	if !je.Reverses.IsZero() && je.Reverses == je.JournalEntryID {
+	if je.Reverses == je.JournalEntryID {
 		return fmt.Errorf("%w: reverse (%v) is same as journal entry (%v)", ErrInvalidJournalEntry, je.Reverses, je.JournalEntryID)
 	}
 	if err := je.IdempotencyKey.Validate(); err != nil {

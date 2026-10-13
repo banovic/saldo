@@ -24,11 +24,6 @@ func ParseLedgerID(s string) (LedgerID, error) {
 	return LedgerID{id}, nil
 }
 
-// IsZero checks if ledger id is zero.
-func (lid LedgerID) IsZero() bool {
-	return lid.UUID == uuid.Nil()
-}
-
 // Ledger is a complete, self-contained set of books for one accounting entity.
 // ReportingTimeZone is used to derive PostedOn dates in journal entries from OccurredAt timestamp.
 // CreatedAt is timestamp in UTC when the Ledger was created (app time is source of truth).
@@ -47,7 +42,7 @@ type Ledger struct {
 //   - functional currency is valid
 //   - reporting time zone is valid
 func (l Ledger) Validate() error {
-	if l.LedgerID.IsZero() {
+	if l.LedgerID == (LedgerID{}) {
 		return fmt.Errorf("%w: ledger id is zero", ErrInvalidLedger)
 	}
 

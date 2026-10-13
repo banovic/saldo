@@ -9,25 +9,6 @@ import (
 	"uuid"
 )
 
-func TestJournalEntryIDIsZero(t *testing.T) {
-	testCases := []struct {
-		name string
-		id   JournalEntryID
-		want bool
-	}{
-		{"zero value", JournalEntryID{}, true},
-		{"nil uuid", JournalEntryID{uuid.Nil()}, true},
-		{"non-nil uuid", JournalEntryID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8ea0")}, false},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := tc.id.IsZero(); got != tc.want {
-				t.Errorf("%v.IsZero() = %t, want %t", tc.id, got, tc.want)
-			}
-		})
-	}
-}
-
 func TestJournalEntryValidate(t *testing.T) {
 	var (
 		ledgerID      = LedgerID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8e9f")}

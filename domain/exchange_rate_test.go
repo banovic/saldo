@@ -8,25 +8,6 @@ import (
 	"uuid"
 )
 
-func TestExchangeRateIDIsZero(t *testing.T) {
-	testCases := []struct {
-		name string
-		id   ExchangeRateID
-		want bool
-	}{
-		{"zero value", ExchangeRateID{}, true},
-		{"nil uuid", ExchangeRateID{uuid.Nil()}, true},
-		{"non-nil uuid", ExchangeRateID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8eb0")}, false},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := tc.id.IsZero(); got != tc.want {
-				t.Errorf("%v.IsZero() = %t, want %t", tc.id, got, tc.want)
-			}
-		})
-	}
-}
-
 func TestExchangeRateValidate(t *testing.T) {
 	valid := ExchangeRate{
 		ExchangeRateID: ExchangeRateID{uuid.MustParse("01992b6e-8f3a-7c1d-9b2e-4a5f6c7d8eb0")},

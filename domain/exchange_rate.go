@@ -14,11 +14,6 @@ var (
 // ExchangeRateID is identifier for single ExchangeRate.
 type ExchangeRateID struct{ uuid.UUID }
 
-// IsZero checks if exchange rate id is zero.
-func (erid ExchangeRateID) IsZero() bool {
-	return erid.UUID == uuid.Nil()
-}
-
 // ExchangeRate is exchange rate between currency pair at certain point in time.
 // Conversion must be deterministic - same inputs must produce same outputs always.
 // ExchangeRate is append only, no deletions nor updates, once it is created.
@@ -46,7 +41,7 @@ type ExchangeRate struct {
 //   - on must be valid date
 //   - source must be valid
 func (er ExchangeRate) Validate() error {
-	if er.ExchangeRateID.IsZero() {
+	if er.ExchangeRateID == (ExchangeRateID{}) {
 		return fmt.Errorf("%w: exchange rate id is empty", ErrInvalidExchangeRate)
 	}
 	if err := er.BaseCurrency.Validate(); err != nil {
