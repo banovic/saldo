@@ -78,3 +78,21 @@ func (r accountRepository) Get(ctx context.Context, id domain.AccountID) (domain
 	}
 	return res.toDomain(), nil
 }
+
+func (r accountRepository) List(ctx context.Context, ledgerID domain.LedgerID) ([]domain.Account, error) {
+	const query = "SELECT account_id, ledger_id, type, code, name, created_at FROM accounts WHERE ledger_id = $1 ORDER BY created_at DESC"
+	rows, err := r.tx.Query(ctx, query, ledgerID)
+	if err != nil {
+		return nil, fmt.Errorf("account list: %w", err)
+	}
+	res, err := pgx.CollectRows(rows, pgx.RowToStructByName[accountRow])
+	if err != nil {
+		return nil, fmt.Errorf("account list: %w", err)
+	}
+
+	d := make([]domain.Account, 0, len(res))
+	for _, o := range res {
+		d = append(d, o.toDomain())
+	}
+	return d, nil
+}

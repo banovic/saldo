@@ -86,7 +86,7 @@ func (lr ledgerRepository) Get(ctx context.Context, id domain.LedgerID) (domain.
 
 // List all ledgers, returns error on failures.
 func (lr ledgerRepository) List(ctx context.Context) ([]domain.Ledger, error) {
-	const query = "SELECT ledger_id, name, functional_currency, reporting_time_zone, created_at FROM ledgers ORDER BY ledger_id"
+	const query = "SELECT ledger_id, name, functional_currency, reporting_time_zone, created_at FROM ledgers ORDER BY created_at DESC"
 	rows, err := lr.tx.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("ledgers list: %w", err)

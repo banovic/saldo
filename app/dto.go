@@ -25,6 +25,14 @@ func ledgerFromDomain(l domain.Ledger) Ledger {
 	}
 }
 
+func ledgersFromDomain(ls []domain.Ledger) []Ledger {
+	d := make([]Ledger, 0, len(ls))
+	for _, l := range ls {
+		d = append(d, ledgerFromDomain(l))
+	}
+	return d
+}
+
 // Account DTO.
 type Account struct {
 	AccountID domain.AccountID
@@ -44,4 +52,12 @@ func accountFromDomain(a domain.Account) Account {
 		Name:      a.Name,
 		CreatedAt: a.CreatedAt,
 	}
+}
+
+func accountsFromDomain(as []domain.Account) []Account {
+	d := make([]Account, 0, len(as))
+	for _, a := range as {
+		d = append(d, accountFromDomain(a))
+	}
+	return d
 }

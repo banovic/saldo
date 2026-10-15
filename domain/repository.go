@@ -13,4 +13,5 @@ type LedgerRepository interface {
 type AccountRepository interface {
 	Insert(context.Context, Account) error
 	Get(context.Context, AccountID) (Account, error)
+	List(context.Context, LedgerID) ([]Account, error)
 }

@@ -14,19 +14,16 @@ type ListLedgersResponse struct {
 }
 
 func (s *Service) ListLedgers(ctx context.Context, req ListLedgersRequest) (ListLedgersResponse, error) {
-	var ledgers []domain.Ledger
-
-	err := s.uow.Execute(ctx, func(r Repositories) error {
-		var err error
-		ledgers, err = r.Ledger.List(ctx)
-		return err
+	// Get data from db.
+	ledgers, err := executeValue(ctx, s.uow, func(r Repositories) ([]domain.Ledger, error) {
+		return r.Ledger.List(ctx)
 	})
+
+	// Map err.
 	if err != nil {
 		return ListLedgersResponse{}, fmt.Errorf("%w: %w", ErrInternal, err)
 	}
-	dtoLedgers := make([]Ledger, 0, len(ledgers))
-	for _, ledger := range ledgers {
-		dtoLedgers = append(dtoLedgers, ledgerFromDomain(ledger))
-	}
-	return ListLedgersResponse{Ledgers: dtoLedgers}, nil
+
+	// Map result.
+	return ListLedgersResponse{ledgersFromDomain(ledgers)}, nil
 }
