@@ -67,4 +67,4 @@ docker exec -it saldo-pg psql -U postgres
 ```
 
 ## Glossary
-'to book' to record in the books.
+'to book' to record a fact in the books.
